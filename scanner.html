@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Scanner Presensi</title>
+
+  <!-- Library Scanner -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    #reader {
+      width: 350px;
+      margin: auto;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 6px;
+      display: inline-block;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Scan QR Presensi</h2>
+  <div id="reader"></div>
+  <div id="status"></div>
+
+  <script>
+    const WEBHOOK_URL = "PASTE_WEBHOOK_N8N_KAMU_DI_SINI";
+
+    function showStatus(text, success = true) {
+      const status = document.getElementById("status");
+      status.style.background = success ? "#c9ffd6" : "#ffd6d6";
+      status.style.color = success ? "#007f1f" : "#7f0000";
+      status.innerText = text;
+    }
+
+    function sendToWebhook(qrText) {
+      fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          barcode: qrText,
+          timestamp: new Date().toISOString()
+        })
+      })
+      .then(res => res.json().catch(() => null))
+      .then(data => {
+        showStatus("Scan berhasil dikirim ✔️", true);
+      })
+      .catch(err => {
+        showStatus("Gagal mengirim ke server ❌", false);
+      });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      showStatus("QR terbaca, sedang mengirim...", true);
+      sendToWebhook(decodedText);
+
+      // Stop scanning 1 detik biar tidak double-scan
+      html5QrcodeScanner.clear();
+      setTimeout(() => location.reload(), 1500);
+    }
+
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+      fps: 10,
+      qrbox: 250
+    });
+    html5QrcodeScanner.render(onScanSuccess);
+  </script>
+
+</body>
+</html>
