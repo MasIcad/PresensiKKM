@@ -67,4 +67,4 @@ Jika membuat ulang workflow, pastikan settingan ini benar agar tidak Error CORS:
 * **PENTING:** Tombol **"Active"** di pojok kanan atas n8n harus menyala **HIJAU** agar sistem berjalan 24 jam.
 
 ---
-*Dibuat untuk keperluan Event [Nama Acara Anda]*
+*Dibuat untuk keperluan Event [KKM (Kemah Kerja Mahasiswa)]*
