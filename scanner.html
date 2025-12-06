@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>QR Scanner Presensi</title>
 
-  <!-- Library Scanner -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
@@ -21,10 +20,11 @@
     }
     #status {
       margin-top: 20px;
-      padding: 10px;
+      padding: 10px 20px;
       border-radius: 6px;
       display: inline-block;
       font-weight: bold;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -32,10 +32,11 @@
 
   <h2>Scan QR Presensi</h2>
   <div id="reader"></div>
-  <div id="status"></div>
+  <div id="status">Silakan scan QR Anda</div>
 
   <script>
-    const WEBHOOK_URL = "https://icad2006.app.n8n.cloud/webhook-test/presensi-qr";
+    // Pastikan URL ini benar (Production URL)
+    const WEBHOOK_URL = "https://icad2006.app.n8n.cloud/webhook/presensi-qr";
 
     function showStatus(text, success = true) {
       const status = document.getElementById("status");
@@ -44,37 +45,78 @@
       status.innerText = text;
     }
 
+    let scanning = true;
+
     function sendToWebhook(qrText) {
+      if (!scanning) return;
+
+      scanning = false;
+      showStatus("QR terbaca, sedang memeriksa...", true);
+
       fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          barcode: qrText,
+          id: qrText,
           timestamp: new Date().toISOString()
         })
       })
-      .then(res => res.json().catch(() => null))
+      .then(res => {
+          if (res.ok) {
+              return res.json();
+          }
+          throw new Error("Gagal HTTP: " + res.status);
+      })
       .then(data => {
-        showStatus("Scan berhasil dikirim ✔️", true);
+        console.log("Jawaban n8n:", data);
+
+        // --- LOGIKA UPDATE NAMA ---
+        
+        const isValid = data.valid === true;
+        // Ambil nama dari n8n, kalau kosong pakai "Kak"
+        const namaSiswa = data.nama || "Kak"; 
+
+        if (isValid) {
+            // Tampilkan: Terima Kasih Budi
+            showStatus("Terima Kasih " + namaSiswa, true);
+        } else {
+            // Tampilkan pesan error jika gagal
+            // Bisa juga menampilkan nama: "Maaf Budi, kamu sudah presensi"
+            const pesanGagal = data.message || "Mohon maaf anda sudah melakukan presensi!";
+            showStatus(pesanGagal, false);
+        }
+
+        // Reset Scanner
+        const delayReset = isValid ? 2000 : 4000;
+
+        setTimeout(() => { 
+            html5QrcodeScanner.clear().then(() => {
+              html5QrcodeScanner.render(onScanSuccess);
+              scanning = true;
+              showStatus("Silakan scan QR Anda", true);
+            });
+        }, delayReset);
       })
       .catch(err => {
-        showStatus("Gagal mengirim ke server ❌", false);
+        console.error("Error Fetch:", err);
+        showStatus("Gagal: Cek Koneksi / Server Error ❌", false);
+        
+        setTimeout(() => {
+            scanning = true;
+            showStatus("Silakan scan QR Anda", true);
+        }, 3000);
       });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-      showStatus("QR terbaca, sedang mengirim...", true);
       sendToWebhook(decodedText);
-
-      // Stop scanning 1 detik biar tidak double-scan
-      html5QrcodeScanner.clear();
-      setTimeout(() => location.reload(), 1500);
     }
 
     const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
       fps: 10,
       qrbox: 250
     });
+
     html5QrcodeScanner.render(onScanSuccess);
   </script>
 
