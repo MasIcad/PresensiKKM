@@ -113,13 +113,11 @@
     }
 
     let isProcessing = false;
-    let scanner;
+    let html5QrCode;
 
     function sendToWebhook(qrText) {
       if (isProcessing) return;
       isProcessing = true;
-
-      try { scanner.pause(); } catch (e) {}
 
       showStatus("QR terbaca! Memeriksa...", true);
 
@@ -142,8 +140,10 @@
             showStatus(data.message || "Anda sudah presensi!", false);
 
           setTimeout(() => {
-            try { scanner.resume(); } catch (e) {}
             isProcessing = false;
+            if (html5QrCode && html5QrCode.getState() === 2) { // 2 = PAUSED
+              html5QrCode.resume();
+            }
             showStatus("Silakan scan QR Anda", true);
           }, isValid ? 2000 : 4000);
         })
@@ -152,45 +152,55 @@
           showStatus("Gagal koneksi. Coba lagi.", false);
 
           setTimeout(() => {
-            try { scanner.resume(); } catch (e) {}
             isProcessing = false;
+            if (html5QrCode && html5QrCode.getState() === 2) {
+              html5QrCode.resume();
+            }
             showStatus("Silakan scan QR Anda", true);
           }, 3000);
         });
     }
 
-    // 📌 ADAPTASI BAGIAN INI SESUAI KODE PERTAMA
-    function onScanSuccess(result) {
-      // kirim ke webhook persis seperti sebelumnya
-      sendToWebhook(result);
-
-      // efek visual seperti di kode pertama
-      document.getElementById('statusBox').innerText = 'QR ditemukan!';
-      document.getElementById('result').innerHTML = `
-        <h2>Success!</h2>
-        <p><a href="${result}" target="_blank">${result}</a></p>
-      `;
-
-      // sama seperti kode pertama — stop scanner total
-      scanner.clear();
-      document.getElementById('reader').remove();
+    function onScanSuccess(decodedText, decodedResult) {
+      if (isProcessing) return;
+      
+      // Pause scanner
+      if (html5QrCode) {
+        html5QrCode.pause();
+      }
+      
+      // Kirim ke webhook
+      sendToWebhook(decodedText);
     }
 
-    function onScanError(err) {
-      console.warn(err);
+    function onScanError(errorMessage) {
+      // Tidak perlu melakukan apa-untuk error biasa
+      console.log(errorMessage);
     }
 
-    // 📌 INISIALISASI SCANNER DI-ADAPTASI
-    window.onload = function () {
-      scanner = new Html5QrcodeScanner('reader', {
+    // Inisialisasi Scanner
+    document.addEventListener('DOMContentLoaded', function() {
+      html5QrCode = new Html5Qrcode("reader");
+      
+      const config = { 
+        fps: 20,
         qrbox: { width: 250, height: 250 },
-        fps: 20
+        aspectRatio: 1.0,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+      };
+      
+      html5QrCode.start(
+        { facingMode: "environment" }, // Prefer kamera belakang
+        config,
+        onScanSuccess,
+        onScanError
+      ).then(() => {
+        showStatus("Kamera siap. Silakan scan QR Anda", true);
+      }).catch(err => {
+        console.error(err);
+        showStatus("Gagal mengakses kamera. Pastikan izin kamera diberikan.", false);
       });
-
-      // pake format: render(success, error) — gaya kode pertama
-      scanner.render(onScanSuccess, onScanError);
-    };
+    });
   </script>
-
 </body>
 </html>
