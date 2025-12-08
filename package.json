@@ -1,0 +1,24 @@
+{
+  "name": "webkkm",
+  "version": "1.0.0",
+  "description": "Sistem presensi digital menggunakan QR Code, terintegrasi otomatis dengan Google Sheets.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MasIcad/PresensiKKM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MasIcad/PresensiKKM/issues"
+  },
+  "homepage": "https://github.com/MasIcad/PresensiKKM#readme",
+  "dependencies": {
+    "html5-qrcode": "^2.3.8"
+  }
+}
