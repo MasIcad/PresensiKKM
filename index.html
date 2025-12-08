@@ -156,7 +156,7 @@
 
           if (isLate) {
             // Tampilkan Kuning
-            showStatus(data.message || "Maaf ${nama}, Anda Terlambat!");
+            showStatus(data.message || "Maaf ${nama}, Anda Terlambat!", "warning");
           } else if (isValid) {
             // Tampilkan Hijau
             showStatus("Terima kasih " + nama, "success");
