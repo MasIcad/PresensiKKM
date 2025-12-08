@@ -139,18 +139,18 @@
       overflow: hidden;
       margin-bottom: 20px;
       border: none !important;
-      /* Hapus background hitam agar UI awal terlihat */
-      /* background: #000; */ 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      /* Tidak diberi background hitam agar UI awal terlihat */
     }
     
     /* Memastikan video fit dalam kotak */
     #reader video {
       object-fit: cover;
       border-radius: 15px;
-      width: 100% !important;
     }
 
-    /* Sembunyikan elemen dashboard yang tidak perlu */
+    /* Kita sembunyikan link-link kecil yang mengganggu, 
+       TAPI membiarkan tombol izin kamera tetap ada */
     #reader__dashboard_section_csr span {
       display: none !important;
     }
@@ -207,7 +207,7 @@
 
     <div id="reader"></div>
     
-    <div id="status">Silakan pilih metode scan di atas</div>
+    <div id="status">Silakan scan QR Anda</div>
 
     <div class="footer-text">Panitia Presensi KKM XLVI</div>
   </div>
@@ -222,18 +222,12 @@
       status.innerText = text;
     }
 
-    let isProcessing = false;
-    let html5QrcodeScanner; // Variabel global untuk instance scanner
+    let scanning = true;
 
     function sendToWebhook(qrText) {
-      if (isProcessing) return;
-      isProcessing = true;
+      if (!scanning) return;
 
-      // Pause scanner saat memproses data
-      if (html5QrcodeScanner) {
-          html5QrcodeScanner.pause();
-      }
-
+      scanning = false;
       showStatus("QR terbaca, sedang memeriksa...", true);
 
       fetch(WEBHOOK_URL, {
@@ -266,12 +260,12 @@
         const delayReset = isValid ? 2000 : 4000;
 
         setTimeout(() => { 
-            // Resume scanner setelah delay
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.resume();
-            }
-            isProcessing = false;
-            showStatus("Silakan scan QR Anda", true);
+            html5QrcodeScanner.clear().then(() => {
+              // Re-render scanner setelah clear
+              html5QrcodeScanner.render(onScanSuccess);
+              scanning = true;
+              showStatus("Silakan scan QR Anda", true);
+            });
         }, delayReset);
       })
       .catch(err => {
@@ -279,11 +273,7 @@
         showStatus("Gagal: Cek Koneksi / Server Error ❌", false);
         
         setTimeout(() => {
-            // Resume scanner jika gagal
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.resume();
-            }
-            isProcessing = false;
+            scanning = true;
             showStatus("Silakan scan QR Anda", true);
         }, 3000);
       });
@@ -293,29 +283,43 @@
       sendToWebhook(decodedText);
     }
 
-    // --- INISIALISASI SCANNER YANG DIPERBAIKI ---
+    // --- INISIALISASI SCANNER (VERSI FIX MOBILE) ---
     
-    // 1. Hitung qrbox secara dinamis berdasarkan lebar layar saat ini
-    // Ini mencegah error "QRBox is larger than video stream" di layar kecil
-    const screenWidth = window.innerWidth;
-    // Gunakan 250px atau 70% dari lebar layar (mana yang lebih kecil)
-    const qrboxSize = Math.min(250, Math.floor(screenWidth * 0.7));
+    // Fungsi ini menghitung ukuran QR Box berdasarkan ukuran layar.
+    // Jika layar kecil (HP), kotak scan akan mengecil agar tidak crash.
+    var qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+        var minEdgeSizeThreshold = 250;
+        var edgeSizePercentage = 0.75;
+        var minEdgeSize = (viewfinderWidth > viewfinderHeight) ?
+            viewfinderHeight : viewfinderWidth;
+        var qrboxEdgeSize = Math.floor(minEdgeSize * edgeSizePercentage);
+        if (qrboxEdgeSize < minEdgeSizeThreshold) {
+            if (minEdgeSize < minEdgeSizeThreshold) {
+                return {width: minEdgeSize, height: minEdgeSize};
+            } else {
+                return {
+                    width: minEdgeSizeThreshold,
+                    height: minEdgeSizeThreshold
+                };
+            }
+        }
+        return {width: qrboxEdgeSize, height: qrboxEdgeSize};
+    }
 
-    // 2. Buat instance Html5QrcodeScanner dengan konfigurasi yang diperbarui
-    html5QrcodeScanner = new Html5QrcodeScanner(
+    // Menggunakan Html5QrcodeScanner agar UI (tombol izin & upload file) tetap ada.
+    const html5QrcodeScanner = new Html5QrcodeScanner(
       "reader", 
       { 
         fps: 10,
-        // Gunakan ukuran dinamis yang sudah dihitung
-        qrbox: qrboxSize,
-        aspectRatio: 1.0, // Kotak Sempurna
-        rememberLastUsedCamera: true, // Mengingat kamera belakang
-        showTorchButtonIfSupported: true, // Tombol senter (opsional)
-        videoConstraints: {
-            facingMode: { ideal: "environment" } // Preferensi Kamera Belakang
-        }
-      },
-      /* verbose= */ false 
+        qrbox: qrboxFunction, // Menggunakan fungsi dinamis
+        
+        // Fitur tambahan agar lebih stabil di Android
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+        },
+        rememberLastUsedCamera: true,
+        showTorchButtonIfSupported: true
+      }
     );
 
     html5QrcodeScanner.render(onScanSuccess);
