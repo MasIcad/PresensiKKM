@@ -151,18 +151,20 @@
           const isValid = data.valid === true;
           const nama = data.nama || "Kak";
 
+          // Cek apakah terdeteksi terlambat
           const isLate = (data.sesi && data.sesi.toUpperCase() === "TERLAMBAT") || 
                          (data.message && data.message.toLowerCase().includes("terlambat"));
 
-          if (isLate && isValid) {
-            // Tampilkan Kuning
-            showStatus(data.message || "Maaf ${nama}, Anda Terlambat!", "warning");
-          } else if (isValid && !isLate) {
-            // Tampilkan Hijau
+          // PERBAIKAN DISINI:
+          // 1. Cek 'isLate' duluan. Jika sistem bilang terlambat, berarti ID pasti ada (valid),
+          //    jadi kita tidak perlu mempedulikan status 'isValid' yang mungkin false dari n8n.
+          if (isLate) {
+            // 2. Gunakan Backtick (`) bukan kutip dua (") agar ${nama} terbaca
+            showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
+          } else if (isValid) {
             showStatus("Terima kasih " + nama, "success");
           } else {
-            // Tampilkan Merah
-            showStatus(data.message || "Anda sudah presensi!", false);
+            showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
           }
 
           // Durasi tampilan pesan sebelum reset
