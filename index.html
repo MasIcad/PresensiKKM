@@ -152,7 +152,7 @@
           const nama = data.nama || "Kak";
 
           // Cek apakah terdeteksi terlambat
-          const isLate = (isValid && data.sesi.toUpperCase() === "TERLAMBAT")
+          const isLate = data.sesi === "TERLAMBAT"
 
           // PERBAIKAN DISINI:
           // 1. Cek 'isLate' duluan. Jika sistem bilang terlambat, berarti ID pasti ada (valid),
