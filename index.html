@@ -49,24 +49,22 @@
     .main-title { font-size: 2.2rem; font-weight: 800; color: #003875; margin: 0; line-height: 1.1; letter-spacing: -1px; }
     .sub-title { font-size: 0.85rem; color: #555; margin-top: 5px; font-weight: 500; line-height: 1.4; }
 
-    /* --- AREA SCANNER --- */
-    #reader {
-      width: 100%; border-radius: 15px; overflow: hidden;
-      margin-bottom: 20px; border: none !important;
-    }
+    /* --- READER FIX --- */
+    #reader { width: 100%; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: none !important; }
+    /* Memastikan link credit tidak mengganggu */
+    #reader__dashboard_section_csr span { display: none !important; }
     
-    /* Tombol bawaan library dipercantik agar sesuai tema */
+    /* Styling tombol bawaan library */
     #reader button {
         background-color: #003875; color: white; border: none;
         padding: 8px 16px; border-radius: 5px; cursor: pointer;
-        font-family: 'Poppins', sans-serif; font-size: 14px; margin-top: 10px;
+        font-family: 'Poppins', sans-serif; font-size: 14px; margin-top: 5px;
     }
     #reader select {
-        padding: 8px; border-radius: 5px; border: 1px solid #ccc;
-        margin-bottom: 10px; font-family: 'Poppins', sans-serif;
+        padding: 5px; border-radius: 5px; border: 1px solid #ccc;
+        margin-bottom: 10px; font-family: 'Poppins', sans-serif; font-size: 14px;
+        width: 100%; max-width: 300px;
     }
-    /* Sembunyikan link text 'HTML5-QRCode' yang kecil */
-    #reader__dashboard_section_csr span { display: none !important; }
 
     /* --- STATUS --- */
     #status { display: block; width: 100%; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; transition: all 0.3s ease; background-color: #f0f2f5; color: #555; }
@@ -84,7 +82,6 @@
     <div class="slide" style="background-image: url('Asset/BG4.jpg');"></div>
     <div class="slide" style="background-image: url('Asset/BG5.jpg');"></div>
   </div>
-  
   <div class="overlay"></div>
 
   <div class="scanner-card">
@@ -115,104 +112,90 @@
     }
 
     let isProcessing = false;
-    let html5QrcodeScanner; // Variabel Global
+    let html5QrcodeScanner;
 
-    // --- LOGIKA PERHITUNGAN QR BOX (KUNCI AGAR TIDAK CRASH DI HP) ---
-    function getQrBoxSize(viewfinderWidth, viewfinderHeight) {
-        let minEdgePercentage = 0.70; // 70% lebar layar
-        let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-        let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-        
-        // Batasi ukuran maksimal 250px agar tidak terlalu besar di desktop
-        if (qrboxSize > 250) {
-            return { width: 250, height: 250 };
+    // --- LOGIKA N8N ---
+    function sendToWebhook(qrText) {
+      if (isProcessing) return;
+      isProcessing = true;
+
+      if(html5QrcodeScanner) html5QrcodeScanner.pause();
+
+      showStatus("QR terbaca! Memeriksa...", true);
+
+      fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: qrText,
+          timestamp: new Date().toISOString()
+        })
+      })
+      .then(res => {
+          if (res.ok) return res.json();
+          throw new Error("Gagal HTTP: " + res.status);
+      })
+      .then(data => {
+        console.log("Jawaban n8n:", data);
+        const isValid = data.valid === true;
+        const namaSiswa = data.nama || "Kak"; 
+
+        if (isValid) {
+            showStatus("Terima Kasih " + namaSiswa, true);
+        } else {
+            const pesanGagal = data.message || "Anda sudah presensi!";
+            showStatus(pesanGagal, false);
         }
-        return { width: qrboxSize, height: qrboxSize };
+
+        const delayReset = isValid ? 2000 : 4000;
+        setTimeout(() => { 
+            if(html5QrcodeScanner) html5QrcodeScanner.resume(); 
+            isProcessing = false;
+            showStatus("Silakan scan QR Anda", true);
+        }, delayReset);
+      })
+      .catch(err => {
+        console.error("Error Fetch:", err);
+        showStatus("Gagal Koneksi. Coba lagi.", false);
+        setTimeout(() => {
+            if(html5QrcodeScanner) html5QrcodeScanner.resume();
+            isProcessing = false;
+            showStatus("Silakan scan QR Anda", true);
+        }, 3000);
+      });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-        if (isProcessing) return;
-        isProcessing = true;
-
-        // Pause kamera saat memproses
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.pause();
-        }
-
-        showStatus("QR terbaca! Memeriksa...", true);
-
-        // Kirim ke n8n
-        fetch(WEBHOOK_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: decodedText,
-                timestamp: new Date().toISOString()
-            })
-        })
-        .then(res => {
-            if (res.ok) return res.json();
-            throw new Error("Gagal HTTP: " + res.status);
-        })
-        .then(data => {
-            console.log("Jawaban n8n:", data);
-            const isValid = data.valid === true;
-            const namaSiswa = data.nama || "Kak"; 
-
-            if (isValid) {
-                showStatus("Terima Kasih " + namaSiswa, true);
-            } else {
-                const pesanGagal = data.message || "Anda sudah presensi!";
-                showStatus(pesanGagal, false);
-            }
-
-            // Resume kamera setelah delay
-            const delayReset = isValid ? 2000 : 4000;
-            setTimeout(() => { 
-                if (html5QrcodeScanner) {
-                    html5QrcodeScanner.resume();
-                }
-                isProcessing = false;
-                showStatus("Silakan scan QR Anda", true);
-            }, delayReset);
-        })
-        .catch(err => {
-            console.error("Error:", err);
-            showStatus("Gagal Koneksi. Coba lagi.", false);
-            setTimeout(() => {
-                if (html5QrcodeScanner) {
-                    html5QrcodeScanner.resume();
-                }
-                isProcessing = false;
-                showStatus("Silakan scan QR Anda", true);
-            }, 3000);
-        });
+      sendToWebhook(decodedText);
     }
 
     function onScanFailure(error) {
-        // Biarkan kosong agar console tidak penuh warning
-        // console.warn(`Code scan error = ${error}`);
+      // Biarkan kosong, error log akan terlalu banyak jika ditampilkan
     }
 
-    // --- INISIALISASI SCANNER (EASY MODE) ---
-    // Sesuai dokumentasi, 'Html5QrcodeScanner' otomatis membuat UI
-    // termasuk dropdown pilihan kamera (depan/belakang) jika tersedia.
+    // ==================================================
+    // INISIALISASI SCANNER "EASY MODE" (VERSI STABIL)
+    // ==================================================
+    
+    // Kita gunakan settingan paling dasar agar kompatibel dengan semua HP
+    // Tidak ada "facingMode" paksaan, biarkan library mendeteksi sendiri.
+    // Nanti akan muncul DROPDOWN di layar untuk pilih kamera.
     
     html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", 
-        { 
-            fps: 10,
-            qrbox: getQrBoxSize, // Menggunakan Fungsi Dinamis (PENTING!)
-            aspectRatio: 1.0,
-            showTorchButtonIfSupported: true,
-            rememberLastUsedCamera: true, // Mengingat kamera terakhir yang dipilih user
-            
-            // Preferensi awal ke kamera belakang (Environment)
-            videoConstraints: {
-                facingMode: { ideal: "environment" }
-            }
-        },
-        /* verbose= */ false
+      "reader", 
+      { 
+        fps: 10,
+        
+        // GUNAKAN UKURAN KECIL & AMAN (200px)
+        // Agar tidak crash di layar HP kecil
+        qrbox: 200, 
+        
+        // Setting tambahan untuk UI
+        rememberLastUsedCamera: true,
+        showTorchButtonIfSupported: true,
+        aspectRatio: 1.0 
+      },
+      /* verbose= */ false
     );
 
     html5QrcodeScanner.render(onScanSuccess, onScanFailure);
