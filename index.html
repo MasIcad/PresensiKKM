@@ -135,7 +135,6 @@
     /* --- AREA SCANNER --- */
     #reader {
       width: 100%;
-      min-height: 250px; /* Tambahan agar tidak collapse saat loading */
       border-radius: 15px;
       overflow: hidden;
       margin-bottom: 20px;
@@ -148,8 +147,6 @@
     #reader video {
       object-fit: cover;
       border-radius: 15px;
-      width: 100% !important;
-      height: 100% !important;
     }
 
     #reader__dashboard_section_csr span, 
@@ -263,8 +260,6 @@
 
         setTimeout(() => { 
             html5QrcodeScanner.clear().then(() => {
-              // Re-render scanner setelah clear
-              // Catatan: library ini kadang butuh jeda sedikit
               html5QrcodeScanner.render(onScanSuccess);
               scanning = true;
               showStatus("Silakan scan QR Anda", true);
@@ -286,34 +281,18 @@
       sendToWebhook(decodedText);
     }
 
-    // --- BAGIAN INI SAYA PERBAIKI AGAR SUPORT HP ---
-    // Logika qrbox dinamis agar tidak crash di layar kecil
-    function qrboxFunction(viewfinderWidth, viewfinderHeight) {
-      let minEdgePercentage = 0.7; // Kotak scan 70% dari ukuran layar
-      let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-      let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-      return {
-        width: qrboxSize,
-        height: qrboxSize
-      };
-    }
-
+    // --- INISIALISASI SCANNER (VERSI FIX MOBILE) ---
     const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
       fps: 10,
-      qrbox: qrboxFunction, // Menggunakan fungsi dinamis, bukan angka tetap
-      aspectRatio: 1.0, 
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1.0, // PENTING: Agar tidak gepeng di HP
       rememberLastUsedCamera: true,
-      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
       videoConstraints: {
-        facingMode: { ideal: "environment" } 
+        facingMode: { ideal: "environment" } // PENTING: Pakai kamera belakang
       }
     });
 
-    // Menambahkan fungsi error handling saat render
-    html5QrcodeScanner.render(onScanSuccess, (errorMessage) => {
-        // Biarkan kosong untuk menghindari spam error di console saat mencari QR
-    });
-
+    html5QrcodeScanner.render(onScanSuccess);
   </script>
 
 </body>
