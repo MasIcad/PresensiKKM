@@ -157,10 +157,10 @@
           // PERBAIKAN DISINI:
           // 1. Cek 'isLate' duluan. Jika sistem bilang terlambat, berarti ID pasti ada (valid),
           //    jadi kita tidak perlu mempedulikan status 'isValid' yang mungkin false dari n8n.
-          if (isLate) {
+          if (isLate && isValid) {
             // 2. Gunakan Backtick (`) bukan kutip dua (") agar ${nama} terbaca
             showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
-          } else if (isValid) {
+          } else if (isValid && !isLate) {
             showStatus("Terima kasih " + nama, "success");
           } else {
             showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
