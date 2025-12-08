@@ -136,7 +136,7 @@
       if (isProcessing) return;
       isProcessing = true;
 
-      showStatus("QR terbaca! Memeriksa...", true);
+      showStatus("QR terbaca! Memeriksa...", "success");
 
       fetch(WEBHOOK_URL, {
         method: "POST",
@@ -148,30 +148,35 @@
       })
         .then(res => res.json())
         .then(data => {
+          // Debugging: Lihat isi data asli dari n8n di Console browser (tekan F12)
+          console.log("Data dari n8n:", data);
+
           const isValid = data.valid === true;
-          const nama = data.nama || "Kak";
+          // Ambil nama, cek juga kalau ada di dalam object barcode
+          const nama = data.nama || (data.barcode && data.barcode.nama) || "Kak";
 
-          // Cek apakah terdeteksi terlambat
-          const isLate = data.sesi === "TERLAMBAT"
+          // --- PERBAIKAN UTAMA DISINI ---
+          // Kita cari status sesi di level atas (data.sesi) ATAU di dalam barcode (data.barcode.sesi)
+          const sesiValue = data.sesi || (data.barcode && data.barcode.sesi) || "";
+          
+          const isLate = sesiValue.toString().toUpperCase() === "TERLAMBAT" || 
+                         (data.message && data.message.toLowerCase().includes("terlambat"));
+          // ------------------------------
 
-          // PERBAIKAN DISINI:
-          // 1. Cek 'isLate' duluan. Jika sistem bilang terlambat, berarti ID pasti ada (valid),
-          //    jadi kita tidak perlu mempedulikan status 'isValid' yang mungkin false dari n8n.
-          if (isLate && isValid) {
-            // 2. Gunakan Backtick (`) bukan kutip dua (") agar ${nama} terbaca
+          if (isLate) {
+            // Pakai backtick (`) agar variabel nama muncul
             showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
-          } else if (isValid && !isLate) {
+          } else if (isValid) {
             showStatus("Terima kasih " + nama, "success");
           } else {
             showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
           }
 
-          // Durasi tampilan pesan sebelum reset
           const delayTime = (isValid || isLate) ? 2500 : 4000;
 
           setTimeout(() => {
             isProcessing = false;
-            if (html5QrCode && html5QrCode.getState() === 2) { // 2 = PAUSED
+            if (html5QrCode && html5QrCode.getState() === 2) { 
               html5QrCode.resume();
             }
             showStatus("Silakan scan QR Anda", true);
