@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
     /* --- RESET & GLOBAL --- */
@@ -49,11 +49,23 @@
     .main-title { font-size: 2.2rem; font-weight: 800; color: #003875; margin: 0; line-height: 1.1; letter-spacing: -1px; }
     .sub-title { font-size: 0.85rem; color: #555; margin-top: 5px; font-weight: 500; line-height: 1.4; }
 
-    /* --- READER FIX --- */
-    #reader { width: 100%; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: none !important; }
-    #reader video { width: 100% !important; object-fit: cover; border-radius: 15px; }
+    /* --- AREA SCANNER --- */
+    #reader {
+      width: 100%; border-radius: 15px; overflow: hidden;
+      margin-bottom: 20px; border: none !important;
+    }
     
-    /* Sembunyikan tulisan 'HTML5-QRCode' bawaan */
+    /* Tombol bawaan library dipercantik agar sesuai tema */
+    #reader button {
+        background-color: #003875; color: white; border: none;
+        padding: 8px 16px; border-radius: 5px; cursor: pointer;
+        font-family: 'Poppins', sans-serif; font-size: 14px; margin-top: 10px;
+    }
+    #reader select {
+        padding: 8px; border-radius: 5px; border: 1px solid #ccc;
+        margin-bottom: 10px; font-family: 'Poppins', sans-serif;
+    }
+    /* Sembunyikan link text 'HTML5-QRCode' yang kecil */
     #reader__dashboard_section_csr span { display: none !important; }
 
     /* --- STATUS --- */
@@ -72,6 +84,7 @@
     <div class="slide" style="background-image: url('Asset/BG4.jpg');"></div>
     <div class="slide" style="background-image: url('Asset/BG5.jpg');"></div>
   </div>
+  
   <div class="overlay"></div>
 
   <div class="scanner-card">
@@ -102,105 +115,107 @@
     }
 
     let isProcessing = false;
-    let html5QrcodeScanner; 
+    let html5QrcodeScanner; // Variabel Global
 
-    // --- LOGIKA N8N ---
-    function sendToWebhook(qrText) {
-      if (isProcessing) return;
-      isProcessing = true;
-
-      if(html5QrcodeScanner) html5QrcodeScanner.pause();
-
-      showStatus("QR terbaca! Memeriksa...", true);
-
-      fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: qrText,
-          timestamp: new Date().toISOString()
-        })
-      })
-      .then(res => {
-          if (res.ok) return res.json();
-          throw new Error("Gagal HTTP: " + res.status);
-      })
-      .then(data => {
-        console.log("Jawaban n8n:", data);
-        const isValid = data.valid === true;
-        const namaSiswa = data.nama || "Kak"; 
-
-        if (isValid) {
-            showStatus("Terima Kasih " + namaSiswa, true);
-        } else {
-            const pesanGagal = data.message || "Anda sudah presensi!";
-            showStatus(pesanGagal, false);
+    // --- LOGIKA PERHITUNGAN QR BOX (KUNCI AGAR TIDAK CRASH DI HP) ---
+    function getQrBoxSize(viewfinderWidth, viewfinderHeight) {
+        let minEdgePercentage = 0.70; // 70% lebar layar
+        let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+        let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+        
+        // Batasi ukuran maksimal 250px agar tidak terlalu besar di desktop
+        if (qrboxSize > 250) {
+            return { width: 250, height: 250 };
         }
-
-        const delayReset = isValid ? 2000 : 4000;
-        setTimeout(() => { 
-            if(html5QrcodeScanner) html5QrcodeScanner.resume(); 
-            isProcessing = false;
-            showStatus("Silakan scan QR Anda", true);
-        }, delayReset);
-      })
-      .catch(err => {
-        console.error("Error Fetch:", err);
-        showStatus("Gagal Koneksi. Coba lagi.", false);
-        setTimeout(() => {
-            if(html5QrcodeScanner) html5QrcodeScanner.resume();
-            isProcessing = false;
-            showStatus("Silakan scan QR Anda", true);
-        }, 3000);
-      });
+        return { width: qrboxSize, height: qrboxSize };
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-      sendToWebhook(decodedText);
-    }
+        if (isProcessing) return;
+        isProcessing = true;
 
-    // =============================================================
-    // BAGIAN PENTING: KONFIGURASI KAMERA
-    // =============================================================
-    
-    // 1. Logika Ukuran Kotak Dinamis (Anti-Crash HP)
-    var qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
-        var minEdgeSizeThreshold = 250;
-        var edgeSizePercentage = 0.75;
-        var minEdgeSize = (viewfinderWidth > viewfinderHeight) ? viewfinderHeight : viewfinderWidth;
-        var qrboxEdgeSize = Math.floor(minEdgeSize * edgeSizePercentage);
-        
-        if (qrboxEdgeSize < minEdgeSizeThreshold) {
-            if (minEdgeSize < minEdgeSizeThreshold) {
-                return {width: minEdgeSize, height: minEdgeSize};
-            } else {
-                return { width: minEdgeSizeThreshold, height: minEdgeSizeThreshold };
-            }
+        // Pause kamera saat memproses
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.pause();
         }
-        return {width: qrboxEdgeSize, height: qrboxEdgeSize};
+
+        showStatus("QR terbaca! Memeriksa...", true);
+
+        // Kirim ke n8n
+        fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                id: decodedText,
+                timestamp: new Date().toISOString()
+            })
+        })
+        .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("Gagal HTTP: " + res.status);
+        })
+        .then(data => {
+            console.log("Jawaban n8n:", data);
+            const isValid = data.valid === true;
+            const namaSiswa = data.nama || "Kak"; 
+
+            if (isValid) {
+                showStatus("Terima Kasih " + namaSiswa, true);
+            } else {
+                const pesanGagal = data.message || "Anda sudah presensi!";
+                showStatus(pesanGagal, false);
+            }
+
+            // Resume kamera setelah delay
+            const delayReset = isValid ? 2000 : 4000;
+            setTimeout(() => { 
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.resume();
+                }
+                isProcessing = false;
+                showStatus("Silakan scan QR Anda", true);
+            }, delayReset);
+        })
+        .catch(err => {
+            console.error("Error:", err);
+            showStatus("Gagal Koneksi. Coba lagi.", false);
+            setTimeout(() => {
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.resume();
+                }
+                isProcessing = false;
+                showStatus("Silakan scan QR Anda", true);
+            }, 3000);
+        });
     }
 
-    // 2. Inisialisasi Scanner
+    function onScanFailure(error) {
+        // Biarkan kosong agar console tidak penuh warning
+        // console.warn(`Code scan error = ${error}`);
+    }
+
+    // --- INISIALISASI SCANNER (EASY MODE) ---
+    // Sesuai dokumentasi, 'Html5QrcodeScanner' otomatis membuat UI
+    // termasuk dropdown pilihan kamera (depan/belakang) jika tersedia.
+    
     html5QrcodeScanner = new Html5QrcodeScanner(
         "reader", 
         { 
             fps: 10,
-            qrbox: qrboxFunction,
+            qrbox: getQrBoxSize, // Menggunakan Fungsi Dinamis (PENTING!)
+            aspectRatio: 1.0,
+            showTorchButtonIfSupported: true,
+            rememberLastUsedCamera: true, // Mengingat kamera terakhir yang dipilih user
             
-            // --- INI PERINTAH UNTUK MEMILIH KAMERA BELAKANG ---
+            // Preferensi awal ke kamera belakang (Environment)
             videoConstraints: {
-                facingMode: { ideal: "environment" } 
-            },
-            
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true
-            },
-            rememberLastUsedCamera: true,
-            showTorchButtonIfSupported: true
-        }
+                facingMode: { ideal: "environment" }
+            }
+        },
+        /* verbose= */ false
     );
 
-    html5QrcodeScanner.render(onScanSuccess);
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 
   </script>
 
