@@ -105,10 +105,27 @@
   <script>
     const WEBHOOK_URL = "https://icad2006.app.n8n.cloud/webhook/presensi-qr";
 
-    function showStatus(text, success = true) {
+    function showStatus(text, type = "success") {
       const status = document.getElementById("status");
-      status.style.background = success ? "#c9ffd6" : "#ffd6d6";
-      status.style.color = success ? "#007f1f" : "#7f0000";
+      
+      // Reset style
+      status.style.background = "#f0f2f5"; 
+      status.style.color = "#555";
+
+      if (type === "success" || type === true) {
+        // Hijau (Sukses)
+        status.style.background = "#c9ffd6";
+        status.style.color = "#007f1f";
+      } else if (type === "warning") {
+        // Kuning/Oranye (Terlambat)
+        status.style.background = "#fff8c5";
+        status.style.color = "#856404";
+      } else {
+        // Merah (Error/Gagal)
+        status.style.background = "#ffd6d6";
+        status.style.color = "#7f0000";
+      }
+      
       status.innerText = text;
     }
 
@@ -139,7 +156,7 @@
 
           if (isLate) {
             // Tampilkan Kuning
-            showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
+            showStatus(data.message || "Maaf ${nama}, Anda Terlambat!");
           } else if (isValid) {
             // Tampilkan Hijau
             showStatus("Terima kasih " + nama, "success");
