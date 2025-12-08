@@ -51,7 +51,6 @@
 
     /* --- READER FIX --- */
     #reader { width: 100%; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: none !important; }
-    #reader__dashboard_section_csr span { display: none !important; }
     
     /* Styling tombol bawaan library */
     #reader button {
@@ -64,6 +63,9 @@
         margin-bottom: 10px; font-family: 'Poppins', sans-serif; font-size: 14px;
         width: 100%; max-width: 300px;
     }
+    
+    /* Menyembunyikan link credit kecil */
+    #reader__dashboard_section_csr span { display: none !important; }
 
     /* --- STATUS --- */
     #status { display: block; width: 100%; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; transition: all 0.3s ease; background-color: #f0f2f5; color: #555; }
@@ -111,13 +113,16 @@
     }
 
     let isProcessing = false;
-    let html5QrcodeScanner;
+    let html5QrcodeScanner; 
 
     function sendToWebhook(qrText) {
       if (isProcessing) return;
       isProcessing = true;
 
-      if(html5QrcodeScanner) html5QrcodeScanner.pause();
+      // Pause kamera jika objek scanner sudah ada
+      if (html5QrcodeScanner) { 
+          try { html5QrcodeScanner.pause(); } catch(e) {}
+      }
 
       showStatus("QR terbaca! Memeriksa...", true);
 
@@ -147,7 +152,9 @@
 
         const delayReset = isValid ? 2000 : 4000;
         setTimeout(() => { 
-            if(html5QrcodeScanner) html5QrcodeScanner.resume(); 
+            if (html5QrcodeScanner) { 
+                try { html5QrcodeScanner.resume(); } catch(e) {}
+            }
             isProcessing = false;
             showStatus("Silakan scan QR Anda", true);
         }, delayReset);
@@ -156,7 +163,9 @@
         console.error("Error Fetch:", err);
         showStatus("Gagal Koneksi. Coba lagi.", false);
         setTimeout(() => {
-            if(html5QrcodeScanner) html5QrcodeScanner.resume();
+            if (html5QrcodeScanner) { 
+                try { html5QrcodeScanner.resume(); } catch(e) {}
+            }
             isProcessing = false;
             showStatus("Silakan scan QR Anda", true);
         }, 3000);
@@ -167,16 +176,17 @@
       sendToWebhook(decodedText);
     }
 
-    // --- INISIALISASI SETELAH HALAMAN SIAP (PENTING) ---
-    // Kode ini hanya akan jalan setelah website selesai loading 100%
+    // --- INISIALISASI SETELAH HALAMAN SIAP ---
+    // Menggunakan window.onload untuk memastikan library & elemen sudah siap
     window.onload = function() {
         try {
-            // Kita gunakan settingan paling dasar dan stabil
+            // Konfigurasi Standar dan Stabil
             html5QrcodeScanner = new Html5QrcodeScanner(
               "reader", 
               { 
                 fps: 10,
                 qrbox: 250, 
+                // Fitur UI Bawaan
                 rememberLastUsedCamera: true,
                 showTorchButtonIfSupported: true,
                 aspectRatio: 1.0 
@@ -187,9 +197,8 @@
             html5QrcodeScanner.render(onScanSuccess);
             
         } catch (err) {
-            // DEBUG: Jika ada error, akan muncul popup di HP
-            alert("Error inisialisasi kamera: " + err);
-            console.error(err);
+            console.error("Error init scanner:", err);
+            showStatus("Gagal memuat kamera: " + err, false);
         }
     };
   </script>
