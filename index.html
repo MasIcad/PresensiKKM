@@ -135,6 +135,7 @@
     /* --- AREA SCANNER --- */
     #reader {
       width: 100%;
+      min-height: 250px; /* Tambahan agar tidak collapse saat loading */
       border-radius: 15px;
       overflow: hidden;
       margin-bottom: 20px;
@@ -147,6 +148,8 @@
     #reader video {
       object-fit: cover;
       border-radius: 15px;
+      width: 100% !important;
+      height: 100% !important;
     }
 
     #reader__dashboard_section_csr span, 
@@ -225,6 +228,7 @@
 
     function sendToWebhook(qrText) {
       if (!scanning) return;
+
       scanning = false;
       showStatus("QR terbaca, sedang memeriksa...", true);
 
@@ -237,11 +241,14 @@
         })
       })
       .then(res => {
-          if (res.ok) { return res.json(); }
+          if (res.ok) {
+              return res.json();
+          }
           throw new Error("Gagal HTTP: " + res.status);
       })
       .then(data => {
         console.log("Jawaban n8n:", data);
+        
         const isValid = data.valid === true;
         const namaSiswa = data.nama || "Kak"; 
 
@@ -253,8 +260,11 @@
         }
 
         const delayReset = isValid ? 2000 : 4000;
+
         setTimeout(() => { 
             html5QrcodeScanner.clear().then(() => {
+              // Re-render scanner setelah clear
+              // Catatan: library ini kadang butuh jeda sedikit
               html5QrcodeScanner.render(onScanSuccess);
               scanning = true;
               showStatus("Silakan scan QR Anda", true);
@@ -264,6 +274,7 @@
       .catch(err => {
         console.error("Error Fetch:", err);
         showStatus("Gagal: Cek Koneksi / Server Error ❌", false);
+        
         setTimeout(() => {
             scanning = true;
             showStatus("Silakan scan QR Anda", true);
@@ -275,34 +286,34 @@
       sendToWebhook(decodedText);
     }
 
-    // --- PERBAIKAN FINAL (ANTI-CRASH) ---
+    // --- BAGIAN INI SAYA PERBAIKI AGAR SUPORT HP ---
+    // Logika qrbox dinamis agar tidak crash di layar kecil
+    function qrboxFunction(viewfinderWidth, viewfinderHeight) {
+      let minEdgePercentage = 0.7; // Kotak scan 70% dari ukuran layar
+      let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+      let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+      return {
+        width: qrboxSize,
+        height: qrboxSize
+      };
+    }
+
     const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
       fps: 10,
-      
-      // 1. qrbox DINAMIS: Menyesuaikan layar HP (agar tidak crash di layar kecil)
-      qrbox: (viewfinderWidth, viewfinderHeight) => {
-        let minEdgePercentage = 0.7; // Kotak scan 70% dari lebar layar
-        let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-        let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-        return {
-          width: qrboxSize,
-          height: qrboxSize
-        };
-      },
-      
+      qrbox: qrboxFunction, // Menggunakan fungsi dinamis, bukan angka tetap
       aspectRatio: 1.0, 
       rememberLastUsedCamera: true,
-      
-      // 2. Settingan Kamera yang lebih 'Sopan' (Supaya HP tidak bingung)
-      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+      videoConstraints: {
+        facingMode: { ideal: "environment" } 
+      }
     });
 
-    // PENTING: Error Handling Visual
-    // Jika kamera gagal start, browser akan memberitahu alasannya
+    // Menambahkan fungsi error handling saat render
     html5QrcodeScanner.render(onScanSuccess, (errorMessage) => {
-        // Biarkan kosong agar tidak spam error di console saat mencari QR
+        // Biarkan kosong untuk menghindari spam error di console saat mencari QR
     });
-    
+
   </script>
 
 </body>
