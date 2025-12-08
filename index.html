@@ -154,10 +154,10 @@
           const isLate = (data.sesi && data.sesi.toUpperCase() === "TERLAMBAT") || 
                          (data.message && data.message.toLowerCase().includes("terlambat"));
 
-          if (isLate) {
+          if (isLate && isValid) {
             // Tampilkan Kuning
             showStatus(data.message || "Maaf ${nama}, Anda Terlambat!", "warning");
-          } else if (isValid) {
+          } else if (isValid && !isLate) {
             // Tampilkan Hijau
             showStatus("Terima kasih " + nama, "success");
           } else {
