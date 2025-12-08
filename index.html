@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
     /* --- RESET & GLOBAL --- */
@@ -49,10 +49,11 @@
     .main-title { font-size: 2.2rem; font-weight: 800; color: #003875; margin: 0; line-height: 1.1; letter-spacing: -1px; }
     .sub-title { font-size: 0.85rem; color: #555; margin-top: 5px; font-weight: 500; line-height: 1.4; }
 
-    /* --- READER (AREA KAMERA) --- */
+    /* --- READER FIX --- */
     #reader { width: 100%; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: none !important; }
+    #reader__dashboard_section_csr span { display: none !important; }
     
-    /* Styling tombol bawaan Library agar rapi */
+    /* Styling tombol bawaan library */
     #reader button {
         background-color: #003875; color: white; border: none;
         padding: 8px 16px; border-radius: 5px; cursor: pointer;
@@ -63,9 +64,6 @@
         margin-bottom: 10px; font-family: 'Poppins', sans-serif; font-size: 14px;
         width: 100%; max-width: 300px;
     }
-    
-    /* Menyembunyikan link credit kecil */
-    #reader__dashboard_section_csr span { display: none !important; }
 
     /* --- STATUS --- */
     #status { display: block; width: 100%; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; transition: all 0.3s ease; background-color: #f0f2f5; color: #555; }
@@ -113,15 +111,13 @@
     }
 
     let isProcessing = false;
-    let html5QrcodeScanner; 
+    let html5QrcodeScanner;
 
-    // --- FUNGSI KIRIM DATA (Logika n8n) ---
     function sendToWebhook(qrText) {
       if (isProcessing) return;
       isProcessing = true;
 
-      // Pause kamera
-      if (html5QrcodeScanner) { html5QrcodeScanner.pause(); }
+      if(html5QrcodeScanner) html5QrcodeScanner.pause();
 
       showStatus("QR terbaca! Memeriksa...", true);
 
@@ -151,7 +147,7 @@
 
         const delayReset = isValid ? 2000 : 4000;
         setTimeout(() => { 
-            if (html5QrcodeScanner) { html5QrcodeScanner.resume(); }
+            if(html5QrcodeScanner) html5QrcodeScanner.resume(); 
             isProcessing = false;
             showStatus("Silakan scan QR Anda", true);
         }, delayReset);
@@ -160,7 +156,7 @@
         console.error("Error Fetch:", err);
         showStatus("Gagal Koneksi. Coba lagi.", false);
         setTimeout(() => {
-            if (html5QrcodeScanner) { html5QrcodeScanner.resume(); }
+            if(html5QrcodeScanner) html5QrcodeScanner.resume();
             isProcessing = false;
             showStatus("Silakan scan QR Anda", true);
         }, 3000);
@@ -171,29 +167,31 @@
       sendToWebhook(decodedText);
     }
 
-    // ==================================================
-    // INISIALISASI SCANNER (SESUAI REFERENSI SCANAPP)
-    // ==================================================
-    
-    // Kita gunakan settingan paling standar.
-    // Library ini akan otomatis mendeteksi kamera dan memberikan UI.
-    
-    html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader", 
-      { 
-        fps: 10,
-        qrbox: 250, // Menggunakan ukuran standar 250 seperti di demo
-        
-        // Fitur UI
-        rememberLastUsedCamera: true,
-        showTorchButtonIfSupported: true,
-        aspectRatio: 1.0 
-      },
-      /* verbose= */ false
-    );
+    // --- INISIALISASI SETELAH HALAMAN SIAP (PENTING) ---
+    // Kode ini hanya akan jalan setelah website selesai loading 100%
+    window.onload = function() {
+        try {
+            // Kita gunakan settingan paling dasar dan stabil
+            html5QrcodeScanner = new Html5QrcodeScanner(
+              "reader", 
+              { 
+                fps: 10,
+                qrbox: 250, 
+                rememberLastUsedCamera: true,
+                showTorchButtonIfSupported: true,
+                aspectRatio: 1.0 
+              },
+              /* verbose= */ false
+            );
 
-    html5QrcodeScanner.render(onScanSuccess);
-
+            html5QrcodeScanner.render(onScanSuccess);
+            
+        } catch (err) {
+            // DEBUG: Jika ada error, akan muncul popup di HP
+            alert("Error inisialisasi kamera: " + err);
+            console.error(err);
+        }
+    };
   </script>
 
 </body>
