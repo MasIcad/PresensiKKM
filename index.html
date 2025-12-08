@@ -3,16 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Presensi KKM XLVI</title>
+  <title>Login Admin - KKM XLVI</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
   <style>
-    /* --- RESET & GLOBAL --- */
+    /* --- RESET & GLOBAL (Sama) --- */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Poppins', sans-serif;
@@ -52,7 +50,7 @@
     .scanner-card {
       background: rgba(255, 255, 255, 0.95);
       width: 100%; max-width: 450px;
-      padding: 25px 20px; border-radius: 20px;
+      padding: 30px 25px; border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       text-align: center; position: relative; z-index: 1;
       backdrop-filter: blur(8px); margin: auto;
@@ -60,7 +58,7 @@
 
     /* --- HEADER --- */
     .header-section {
-      margin-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.08);
+      margin-bottom: 25px; border-bottom: 2px solid rgba(0,0,0,0.08);
       padding-bottom: 15px;
     }
     .logo-container {
@@ -77,130 +75,169 @@
       font-weight: 500; line-height: 1.4;
     }
 
-    /* --- SCANNER --- */
-    #reader {
-      width: 100%; border-radius: 15px; overflow: hidden;
-      margin-bottom: 20px; border: none !important;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05); background: #000;
+    /* --- FORM LOGIN STYLE (BARU) --- */
+    .login-group {
+      margin-bottom: 15px;
+      text-align: left;
     }
-    #reader video { object-fit: cover; border-radius: 15px; }
-    #reader__dashboard_section_csr span, 
-    #reader__dashboard_section_swaplink { display: none !important; }
-
-    /* --- STATUS --- */
-    #status {
-      display: block; width: 100%; padding: 12px;
-      border-radius: 10px; font-weight: 600; font-size: 14px;
-      transition: all 0.3s ease; background-color: #f0f2f5; color: #555;
+    .login-label {
+      font-size: 0.85rem; font-weight: 600; color: #555;
+      display: block; margin-bottom: 5px;
     }
-    .footer-text { margin-top: 15px; font-size: 11px; color: #888; }
+    .login-input {
+      width: 100%; padding: 12px;
+      border: 2px solid #ddd; border-radius: 10px;
+      font-family: 'Poppins', sans-serif; font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    .login-input:focus {
+      outline: none; border-color: #003875;
+    }
+    .error-msg {
+      color: #d32f2f; font-size: 0.85rem; margin-top: 10px;
+      display: none; font-weight: 600;
+    }
 
+    /* --- TOMBOL --- */
+    .admin-menu {
+      display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;
+    }
+    .admin-btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; width: 100%; padding: 16px; border-radius: 12px;
+      text-decoration: none; font-weight: 600; font-size: 1rem;
+      transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      cursor: pointer; border: none; font-family: 'Poppins', sans-serif;
+    }
+
+    .btn-primary { background-color: #003875; color: white; border: 2px solid #003875; }
+    .btn-primary:hover { background-color: #00509d; transform: translateY(-2px); }
+
+    .btn-secondary { background-color: white; color: #003875; border: 2px solid #003875; }
+    .btn-secondary:hover { background-color: #f0f8ff; transform: translateY(-2px); }
+    
+    .instruction { font-size: 0.9rem; color: #666; margin-bottom: 15px; }
+    .back-link {
+      display: inline-block; margin-top: 10px; color: #888;
+      font-size: 0.85rem; text-decoration: none; transition: color 0.2s;
+    }
+    .back-link:hover { color: #003875; text-decoration: underline; }
+    .footer-text { margin-top: 15px; font-size: 11px; color: #aaa; }
+
+    /* Responsive */
     @media (max-width: 480px) {
       .logo { height: 50px; } .main-title { font-size: 1.8rem; }
     }
+    
+    /* Utility class untuk hide/show */
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
   <div class="slideshow-container">
-    <div class="slide" style="background-image: url('Asset/BG1.jpg');"></div>
-    <div class="slide" style="background-image: url('Asset/BG2.jpg');"></div>
-    <div class="slide" style="background-image: url('Asset/BG3.jpg');"></div>
-    <div class="slide" style="background-image: url('Asset/BG4.jpg');"></div>
-    <div class="slide" style="background-image: url('Asset/BG5.jpg');"></div>
+    <div class="slide" style="background-image: url('Asset/bg1.jpg');"></div>
+    <div class="slide" style="background-image: url('Asset/bg2.jpg');"></div>
+    <div class="slide" style="background-image: url('Asset/bg3.jpg');"></div>
+    <div class="slide" style="background-image: url('Asset/bg4.jpg');"></div>
+    <div class="slide" style="background-image: url('Asset/bg5.jpg');"></div>
   </div>
   <div class="overlay"></div>
 
   <div class="scanner-card">
+    
     <div class="header-section">
       <div class="logo-container">
         <img src="Asset/LogoUB.png" alt="Logo UB" class="logo">
         <img src="Asset/LogoBEM.png" alt="Logo BEM" class="logo">
       </div>
       <h1 class="main-title">KKM XLVI</h1>
-      <p class="sub-title">Kemah Kerja Mahasiswa Fakultas Teknik | <br>Universitas Brawijaya</p>
+      <p class="sub-title">Halaman Administrator</p>
     </div>
 
-    <div id="reader"></div>
-    <div id="status">Silakan scan QR Anda</div>
+    <div id="login-section">
+      <p class="instruction">Masukkan ID dan Password Panitia:</p>
+      
+      <form onsubmit="handleLogin(event)">
+        <div class="login-group">
+          <label class="login-label">ID Panitia</label>
+          <input type="text" id="username" class="login-input" placeholder="Masukkan ID..." required>
+        </div>
+        
+        <div class="login-group">
+          <label class="login-label">Password</label>
+          <input type="password" id="password" class="login-input" placeholder="Masukkan Password..." required>
+        </div>
+
+        <p id="error-message" class="error-msg">ID atau Password salah!</p>
+
+        <button type="submit" class="admin-btn btn-primary">
+          🔓 Login Masuk
+        </button>
+      </form>
+    </div>
+
+    <div id="admin-content" class="hidden">
+      <p class="instruction" style="color: #007f1f;">✅ Login Berhasil! Silakan akses data:</p>
+
+      <div class="admin-menu">
+        <a href="https://docs.google.com/spreadsheets/d/1vL_9xj3B5DQ7pL3zndI-ew-tC5RIbI47Bh0j5QgrIXY/edit?usp=sharing" target="_blank" class="admin-btn btn-primary">
+          <span>📄</span> Buka Data Presensi
+        </a>
+
+        <a href="https://docs.google.com/spreadsheets/d/1r2KxSNgT6I2uOFzN7qTSmR9iejB_3H3GlYYieFJOM9A/edit?usp=sharing" target="_blank" class="admin-btn btn-secondary">
+          <span>📊</span> Buka Data Rekapitulasi
+        </a>
+      </div>
+
+      <button onclick="logout()" class="back-link" style="background:none; border:none; cursor:pointer; font-size: 0.9rem;">
+        🔒 Logout (Kunci Kembali)
+      </button>
+    </div>
+    
+    <div style="margin-top: 15px;">
+      <a href="index.html" class="back-link">← Kembali ke Scanner Presensi</a>
+    </div>
     <div class="footer-text">Panitia Presensi KKM XLVI</div>
   </div>
 
   <script>
-    const WEBHOOK_URL = "https://icad2006.app.n8n.cloud/webhook/presensi-qr";
+    // --- KONFIGURASI PASSWORD DI SINI ---
+    const ADMIN_ID = "admin";       // Ganti ID yang diinginkan
+    const ADMIN_PASS = "kkm2025";   // Ganti Password yang diinginkan
 
-    function showStatus(text, success = true) {
-      const status = document.getElementById("status");
-      status.style.background = success ? "#c9ffd6" : "#ffd6d6";
-      status.style.color = success ? "#007f1f" : "#7f0000";
-      status.innerText = text;
-    }
+    function handleLogin(event) {
+      event.preventDefault(); // Mencegah reload halaman
 
-    let scanning = true;
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      const errorMsg = document.getElementById('error-message');
+      const loginSection = document.getElementById('login-section');
+      const adminContent = document.getElementById('admin-content');
 
-    function sendToWebhook(qrText) {
-      if (!scanning) return;
-      scanning = false;
-      showStatus("QR terbaca, sedang memeriksa...", true);
-
-      fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: qrText,
-          timestamp: new Date().toISOString()
-        })
-      })
-      .then(res => {
-          if (res.ok) { return res.json(); }
-          throw new Error("Gagal HTTP: " + res.status);
-      })
-      .then(data => {
-        console.log("Jawaban n8n:", data);
-        const isValid = data.valid === true;
-        const namaSiswa = data.nama || "Kak"; 
-
-        if (isValid) {
-            showStatus("Terima Kasih " + namaSiswa, true);
-        } else {
-            const pesanGagal = data.message || "Mohon maaf anda sudah melakukan presensi!";
-            showStatus(pesanGagal, false);
-        }
-
-        const delayReset = isValid ? 2000 : 4000;
-        setTimeout(() => { 
-            html5QrcodeScanner.clear().then(() => {
-              html5QrcodeScanner.render(onScanSuccess);
-              scanning = true;
-              showStatus("Silakan scan QR Anda", true);
-            });
-        }, delayReset);
-      })
-      .catch(err => {
-        console.error("Error Fetch:", err);
-        showStatus("Gagal: Cek Koneksi / Server Error ❌", false);
-        setTimeout(() => {
-            scanning = true;
-            showStatus("Silakan scan QR Anda", true);
-        }, 3000);
-      });
-    }
-
-    function onScanSuccess(decodedText, decodedResult) {
-      sendToWebhook(decodedText);
-    }
-
-    // --- PERBAIKAN UTAMA DI SINI ---
-    // Menambahkan videoConstraints agar HP memilih kamera belakang
-    const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-      fps: 10,
-      qrbox: 250,
-      videoConstraints: {
-        facingMode: "environment" // Ini perintah untuk pakai kamera belakang
+      // Cek apakah ID dan Password cocok
+      if (user === ADMIN_ID && pass === ADMIN_PASS) {
+        // Jika Benar: Sembunyikan login, Munculkan menu
+        loginSection.classList.add('hidden');
+        adminContent.classList.remove('hidden');
+        errorMsg.style.display = 'none';
+      } else {
+        // Jika Salah: Munculkan pesan merah
+        errorMsg.style.display = 'block';
+        // Animasi getar (optional UX)
+        document.querySelector('.scanner-card').animate([
+          { transform: 'translateX(0)' },
+          { transform: 'translateX(-10px)' },
+          { transform: 'translateX(10px)' },
+          { transform: 'translateX(0)' }
+        ], { duration: 300 });
       }
-    });
+    }
 
-    html5QrcodeScanner.render(onScanSuccess);
+    function logout() {
+      // Refresh halaman untuk mengunci kembali
+      location.reload();
+    }
   </script>
 
 </body>
