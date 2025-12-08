@@ -13,58 +13,29 @@
 
   <style>
     /* --- RESET & GLOBAL --- */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Poppins', sans-serif;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 15px;
-      color: #333;
-      overflow-x: hidden;
-      overflow-y: auto; 
+      display: flex; align-items: center; justify-content: center;
+      padding: 15px; color: #333;
+      overflow-x: hidden; overflow-y: auto; 
     }
 
     /* --- BACKGROUND SLIDESHOW --- */
     .slideshow-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -2;
-      background-color: #003875;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -2; background-color: #003875;
     }
-
     .slide {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-size: cover;
-      background-position: center;
-      opacity: 0;
-      animation: slideAnimation 30s infinite; 
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-size: cover; background-position: center;
+      opacity: 0; animation: slideAnimation 30s infinite; 
     }
-
-    /* Overlay Gelap */
     .overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 56, 117, 0.6);
-      z-index: -1;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 56, 117, 0.6); z-index: -1;
     }
-
     .slide:nth-child(1) { animation-delay: 0s; }
     .slide:nth-child(2) { animation-delay: 6s; }
     .slide:nth-child(3) { animation-delay: 12s; }
@@ -73,110 +44,59 @@
 
     @keyframes slideAnimation {
       0% { opacity: 0; transform: scale(1); }
-      5% { opacity: 1; }
-      20% { opacity: 1; }
-      25% { opacity: 0; transform: scale(1.05); }
-      100% { opacity: 0; }
+      5% { opacity: 1; } 20% { opacity: 1; }
+      25% { opacity: 0; transform: scale(1.05); } 100% { opacity: 0; }
     }
 
-    /* --- TAMPILAN KARTU --- */
+    /* --- KARTU --- */
     .scanner-card {
       background: rgba(255, 255, 255, 0.95);
-      width: 100%;
-      max-width: 450px;
-      padding: 25px 20px;
-      border-radius: 20px;
+      width: 100%; max-width: 450px;
+      padding: 25px 20px; border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      text-align: center;
-      position: relative;
-      z-index: 1;
-      backdrop-filter: blur(8px);
-      margin: auto;
+      text-align: center; position: relative; z-index: 1;
+      backdrop-filter: blur(8px); margin: auto;
     }
 
     /* --- HEADER --- */
     .header-section {
-      margin-bottom: 20px;
-      border-bottom: 2px solid rgba(0,0,0,0.08);
+      margin-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.08);
       padding-bottom: 15px;
     }
-
     .logo-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 15px;
+      display: flex; justify-content: center; align-items: center;
+      gap: 15px; margin-bottom: 15px;
     }
-
-    .logo {
-      height: 65px;
-      width: auto;
-      object-fit: contain;
-    }
-
+    .logo { height: 65px; width: auto; object-fit: contain; }
     .main-title {
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: #003875;
-      margin: 0;
-      line-height: 1.1;
-      letter-spacing: -1px;
+      font-size: 2.2rem; font-weight: 800; color: #003875;
+      margin: 0; line-height: 1.1; letter-spacing: -1px;
     }
-
     .sub-title {
-      font-size: 0.85rem;
-      color: #555;
-      margin-top: 5px;
-      font-weight: 500;
-      line-height: 1.4;
+      font-size: 0.85rem; color: #555; margin-top: 5px;
+      font-weight: 500; line-height: 1.4;
     }
 
-    /* --- AREA SCANNER --- */
+    /* --- SCANNER --- */
     #reader {
-      width: 100%;
-      border-radius: 15px;
-      overflow: hidden;
-      margin-bottom: 20px;
-      border: none !important;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      background: #000;
+      width: 100%; border-radius: 15px; overflow: hidden;
+      margin-bottom: 20px; border: none !important;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05); background: #000;
     }
-    
-    /* Memastikan video fit dalam kotak */
-    #reader video {
-      object-fit: cover;
-      border-radius: 15px;
-    }
-
+    #reader video { object-fit: cover; border-radius: 15px; }
     #reader__dashboard_section_csr span, 
-    #reader__dashboard_section_swaplink {
-      display: none !important;
-    }
-    
+    #reader__dashboard_section_swaplink { display: none !important; }
+
     /* --- STATUS --- */
     #status {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 14px;
-      transition: all 0.3s ease;
-      background-color: #f0f2f5;
-      color: #555;
+      display: block; width: 100%; padding: 12px;
+      border-radius: 10px; font-weight: 600; font-size: 14px;
+      transition: all 0.3s ease; background-color: #f0f2f5; color: #555;
     }
+    .footer-text { margin-top: 15px; font-size: 11px; color: #888; }
 
-    .footer-text {
-      margin-top: 15px;
-      font-size: 11px;
-      color: #888;
-    }
-
-    /* --- RESPONSIVE MOBILE --- */
     @media (max-width: 480px) {
-      .logo { height: 50px; }
-      .main-title { font-size: 1.8rem; }
+      .logo { height: 50px; } .main-title { font-size: 1.8rem; }
     }
   </style>
 </head>
@@ -189,25 +109,20 @@
     <div class="slide" style="background-image: url('Asset/BG4.jpg');"></div>
     <div class="slide" style="background-image: url('Asset/BG5.jpg');"></div>
   </div>
-  
   <div class="overlay"></div>
 
   <div class="scanner-card">
-    
     <div class="header-section">
       <div class="logo-container">
         <img src="Asset/LogoUB.png" alt="Logo UB" class="logo">
         <img src="Asset/LogoBEM.png" alt="Logo BEM" class="logo">
       </div>
-      
       <h1 class="main-title">KKM XLVI</h1>
       <p class="sub-title">Kemah Kerja Mahasiswa Fakultas Teknik | <br>Universitas Brawijaya</p>
     </div>
 
     <div id="reader"></div>
-    
     <div id="status">Silakan scan QR Anda</div>
-
     <div class="footer-text">Panitia Presensi KKM XLVI</div>
   </div>
 
@@ -225,7 +140,6 @@
 
     function sendToWebhook(qrText) {
       if (!scanning) return;
-
       scanning = false;
       showStatus("QR terbaca, sedang memeriksa...", true);
 
@@ -238,14 +152,11 @@
         })
       })
       .then(res => {
-          if (res.ok) {
-              return res.json();
-          }
+          if (res.ok) { return res.json(); }
           throw new Error("Gagal HTTP: " + res.status);
       })
       .then(data => {
         console.log("Jawaban n8n:", data);
-        
         const isValid = data.valid === true;
         const namaSiswa = data.nama || "Kak"; 
 
@@ -257,7 +168,6 @@
         }
 
         const delayReset = isValid ? 2000 : 4000;
-
         setTimeout(() => { 
             html5QrcodeScanner.clear().then(() => {
               html5QrcodeScanner.render(onScanSuccess);
@@ -269,7 +179,6 @@
       .catch(err => {
         console.error("Error Fetch:", err);
         showStatus("Gagal: Cek Koneksi / Server Error ❌", false);
-        
         setTimeout(() => {
             scanning = true;
             showStatus("Silakan scan QR Anda", true);
@@ -281,14 +190,13 @@
       sendToWebhook(decodedText);
     }
 
-    // --- INISIALISASI SCANNER (VERSI FIX MOBILE) ---
+    // --- PERBAIKAN UTAMA DI SINI ---
+    // Menambahkan videoConstraints agar HP memilih kamera belakang
     const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
       fps: 10,
-      qrbox: { width: 250, height: 250 },
-      aspectRatio: 1.0, // PENTING: Agar tidak gepeng di HP
-      rememberLastUsedCamera: true,
+      qrbox: 250,
       videoConstraints: {
-        facingMode: { ideal: "environment" } // PENTING: Pakai kamera belakang
+        facingMode: "environment" // Ini perintah untuk pakai kamera belakang
       }
     });
 
