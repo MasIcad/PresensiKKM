@@ -199,10 +199,6 @@
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
       
-      if (html5QrCode) {
-        html5QrCode.pause();
-      }
-      
       sendToWebhook(decodedText);
     }
 
