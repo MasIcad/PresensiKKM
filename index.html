@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
     /* --- RESET & GLOBAL --- */
@@ -49,7 +49,9 @@
     .main-title { font-size: 2.2rem; font-weight: 800; color: #003875; margin: 0; line-height: 1.1; letter-spacing: -1px; }
     .sub-title { font-size: 0.85rem; color: #555; margin-top: 5px; font-weight: 500; line-height: 1.4; }
 
+    /* --- READER FIX --- */
     #reader { width: 100%; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: none !important; }
+    #reader__dashboard_section_csr span { display: none !important; }
     
     #reader button {
         background-color: #003875; color: white; border: none;
@@ -61,9 +63,8 @@
         margin-bottom: 10px; font-family: 'Poppins', sans-serif; font-size: 14px;
         width: 100%; max-width: 300px;
     }
-    
-    #reader__dashboard_section_csr span { display: none !important; }
 
+    /* --- STATUS --- */
     #status { display: block; width: 100%; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; transition: all 0.3s ease; background-color: #f0f2f5; color: #555; }
     .footer-text { margin-top: 15px; font-size: 11px; color: #888; }
 
@@ -93,7 +94,7 @@
 
     <div id="reader"></div>
     
-    <div id="status">Pilih metode scan di atas</div>
+    <div id="status">Menyiapkan Kamera...</div>
 
     <div class="footer-text">Panitia Presensi KKM XLVI</div>
   </div>
@@ -103,34 +104,41 @@
 
     function showStatus(text, type = "success") {
       const status = document.getElementById("status");
-      
-      // Reset style
       status.style.background = "#f0f2f5"; 
       status.style.color = "#555";
 
-      if (type === "success" || type === true) {
-        // Hijau (Sukses)
-        status.style.background = "#c9ffd6";
-        status.style.color = "#007f1f";
+      if (type === "success") {
+        status.style.background = "#c9ffd6"; status.style.color = "#007f1f";
       } else if (type === "warning") {
-        // Kuning/Oranye (Terlambat)
-        status.style.background = "#fff8c5";
-        status.style.color = "#856404";
-      } else {
-        // Merah (Error/Gagal)
-        status.style.background = "#ffd6d6";
-        status.style.color = "#7f0000";
+        status.style.background = "#fff8c5"; status.style.color = "#856404";
+      } else if (type === "error") {
+        status.style.background = "#ffd6d6"; status.style.color = "#7f0000";
       }
-      
       status.innerText = text;
     }
 
     let isProcessing = false;
     let html5QrCode;
 
+    // --- FUNGSI UNTUK MERESET KAMERA (Anti-Stuck) ---
+    function resetScanner() {
+        isProcessing = false;
+        // Hanya resume jika kamera sedang pause (state = 2)
+        try {
+            if (html5QrCode && html5QrCode.getState() === 2) { 
+                html5QrCode.resume();
+            }
+        } catch (e) { console.log("Info resume:", e); }
+        
+        showStatus("Silakan scan QR Anda", true);
+    }
+
     function sendToWebhook(qrText) {
       if (isProcessing) return;
       isProcessing = true;
+
+      // Pause kamera agar tidak scan berulang
+      try { if (html5QrCode) html5QrCode.pause(); } catch(e) {}
 
       showStatus("QR terbaca! Memeriksa...", "success");
 
@@ -142,74 +150,72 @@
           timestamp: new Date().toISOString()
         })
       })
-        .then(res => res.json())
-        .then(data => {
-          console.log("Data dari n8n:", data);
+      .then(res => {
+          if (!res.ok) throw new Error("Gagal HTTP: " + res.status);
+          return res.json();
+      })
+      .then(data => {
+        console.log("Data dari n8n:", data);
 
-          const isValid = data.valid === true;
-          const nama = data.nama || (data.barcode && data.barcode.nama) || "Kak";
+        // --- 1. AMBIL NAMA (DENGAN SAFE CHECK) ---
+        // Jika data.nama ada, pakai itu. Jika tidak, coba cari di barcode. Jika tidak ada, pakai "Kak".
+        let namaSiswa = data.nama || (data.barcode && data.barcode.nama) || "Kak";
 
-          const sesiValue = data.sesi || (data.barcode && data.barcode.sesi) || "";
-          
-          const isLate = sesiValue.toString().toUpperCase() === "TERLAMBAT" || 
-                         (data.message && data.message.toLowerCase().includes("terlambat"));
+        // --- 2. LOGIKA STATUS BERDASARKAN RESPON N8N ---
+        // Kita gunakan 'status' yang dikirim n8n ("success", "warning", "error")
+        const statusN8N = data.status; 
+        const messageN8N = data.message;
 
-          if (isLate) {
-            showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
-          } else if (isValid) {
-            showStatus("Terima kasih " + nama, "success");
-          } else {
-            showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
-          }
+        let tipePesan = "error"; // Default merah jika tidak dikenali
 
-          const delayTime = (isValid || isLate) ? 2500 : 4000;
+        if (statusN8N === "success") {
+            // HIJAU: Sukses
+            tipePesan = "success";
+            showStatus("Terima kasih " + namaSiswa, "success");
+        } 
+        else if (statusN8N === "warning") {
+            // KUNING: Terlambat
+            tipePesan = "warning";
+            showStatus(messageN8N || "Anda Terlambat!", "warning");
+        } 
+        else {
+            // MERAH: Gagal / Error
+            tipePesan = "error";
+            showStatus(messageN8N || "Gagal Presensi!", "error");
+        }
 
-          setTimeout(() => {
-            isProcessing = false;
-            if (html5QrCode && html5QrCode.getState() === 2) { 
-              html5QrCode.resume();
-            }
-            showStatus("Silakan scan QR Anda", true);
-          }, delayTime);
-        })
-        .catch(err => {
-          console.error(err);
-          showStatus("Gagal koneksi. Coba lagi.", false);
-
-          setTimeout(() => {
-            isProcessing = false;
-            if (html5QrCode && html5QrCode.getState() === 2) {
-              html5QrCode.resume();
-            }
-            showStatus("Silakan scan QR Anda", true);
-          }, 3000);
-        });
+        // Tentukan lama delay sebelum reset
+        const delayTime = (tipePesan === "success" || tipePesan === "warning") ? 2500 : 4000;
+        
+        // Reset Scanner setelah pesan terbaca
+        setTimeout(resetScanner, delayTime);
+      })
+      .catch(err => {
+        console.error("Fetch Error:", err);
+        showStatus("Gagal koneksi. Coba lagi.", "error");
+        setTimeout(resetScanner, 3000);
+      });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-      if (isProcessing) return;
-      
-      if (html5QrCode) {
-        html5QrCode.pause();
-      }
-      
       sendToWebhook(decodedText);
     }
 
     function onScanError(errorMessage) {
-      console.log(errorMessage);
+      // console.log(errorMessage); // Biarkan kosong agar console bersih
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+      // Inisialisasi Manual (Sesuai kode terakhir Anda yang jalan)
       html5QrCode = new Html5Qrcode("reader");
       
       const config = { 
         fps: 20,
         qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+        aspectRatio: 1.0
       };
       
+      // Start Kamera
       html5QrCode.start(
         { facingMode: "environment" },
         config,
@@ -219,7 +225,7 @@
         showStatus("Kamera siap. Silakan scan QR Anda", true);
       }).catch(err => {
         console.error(err);
-        showStatus("Gagal mengakses kamera. Pastikan izin kamera diberikan.", false);
+        showStatus("Gagal akses kamera. Refresh / Izinkan Kamera.", "error");
       });
     });
   </script>
