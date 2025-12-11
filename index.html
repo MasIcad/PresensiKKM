@@ -154,9 +154,9 @@
           const isLate = sesiValue.toString().toUpperCase() === "TERLAMBAT" || 
                          (data.message && data.message.toLowerCase().includes("terlambat"));
 
-          if (data.status === "warning") {
+          if (isLate) {
             showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
-          } else if (data.status === "success") {
+          } else if (isValid) {
             showStatus("Terima kasih " + nama, "success");
           } else {
             showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
@@ -166,9 +166,8 @@
 
           setTimeout(() => {
             isProcessing = false;
-            if (html5QrCode && html5QrCode.getState() === 2) { 
-              html5QrCode.resume();
-            }
+            // Html5QrcodeScanner secara otomatis melanjutkan pemindaian
+            // Tidak perlu memanggil resume() untuk Html5QrcodeScanner
             showStatus("Silakan scan QR Anda", true);
           }, delayTime);
         })
@@ -178,9 +177,6 @@
 
           setTimeout(() => {
             isProcessing = false;
-            if (html5QrCode && html5QrCode.getState() === 2) {
-              html5QrCode.resume();
-            }
             showStatus("Silakan scan QR Anda", true);
           }, 3000);
         });
@@ -189,38 +185,28 @@
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
       
-      if (html5QrCode) {
-        html5QrCode.pause();
-      }
+      // Untuk Html5QrcodeScanner, kita tidak perlu memanggil pause() secara manual
+      // karena kita menggunakan flag isProcessing untuk mencegah pemrosesan ganda
       
       sendToWebhook(decodedText);
     }
 
     function onScanError(errorMessage) {
-      console.log(errorMessage);
+      // console.log(errorMessage); 
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-      html5QrCode = new Html5Qrcode("reader");
+      // Menggunakan Html5QrcodeScanner agar UI (tombol izin & upload file) tetap ada
+      const html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { 
+            fps: 10,
+            qrbox: 250
+        },
+        /* verbose= */ false
+      );
       
-      const config = { 
-        fps: 20,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
-      };
-      
-      html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess,
-        onScanError
-      ).then(() => {
-        showStatus("Kamera siap. Silakan scan QR Anda", true);
-      }).catch(err => {
-        console.error(err);
-        showStatus("Gagal mengakses kamera. Pastikan izin kamera diberikan.", false);
-      });
+      html5QrcodeScanner.render(onScanSuccess, onScanError);
     });
   </script>
 </body>
