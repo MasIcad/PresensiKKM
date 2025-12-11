@@ -9,12 +9,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    /* --- CSS TETAP SAMA --- */
+    /* --- RESET & GLOBAL --- */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Poppins', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 15px; color: #333; overflow-x: hidden; overflow-y: auto; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 15px; color: #333;
+      overflow-x: hidden; overflow-y: auto; 
+    }
+
+    /* --- BACKGROUND SLIDESHOW --- */
     .slideshow-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; background-color: #003875; }
     .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; animation: slideAnimation 30s infinite; }
     .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 56, 117, 0.6); z-index: -1; }
@@ -25,7 +33,16 @@
     .slide:nth-child(5) { animation-delay: 24s; }
     @keyframes slideAnimation { 0% { opacity: 0; transform: scale(1); } 5% { opacity: 1; } 20% { opacity: 1; } 25% { opacity: 0; transform: scale(1.05); } 100% { opacity: 0; } }
 
-    .scanner-card { background: rgba(255, 255, 255, 0.95); width: 100%; max-width: 450px; padding: 25px 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); text-align: center; position: relative; z-index: 1; backdrop-filter: blur(8px); margin: auto; }
+    /* --- KARTU --- */
+    .scanner-card {
+      background: rgba(255, 255, 255, 0.95); width: 100%; max-width: 450px;
+      padding: 25px 20px; border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      text-align: center; position: relative; z-index: 1;
+      backdrop-filter: blur(8px); margin: auto;
+    }
+
+    /* --- HEADER --- */
     .header-section { margin-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.08); padding-bottom: 15px; }
     .logo-container { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px; }
     .logo { height: 65px; width: auto; object-fit: contain; }
@@ -33,12 +50,23 @@
     .sub-title { font-size: 0.85rem; color: #555; margin-top: 5px; font-weight: 500; line-height: 1.4; }
 
     #reader { width: 100%; border-radius: 15px; overflow: hidden; margin-bottom: 20px; border: none !important; }
-    #reader button { background-color: #003875; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 14px; margin-top: 5px; }
-    #reader select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; font-family: 'Poppins', sans-serif; font-size: 14px; width: 100%; max-width: 300px; }
+    
+    #reader button {
+        background-color: #003875; color: white; border: none;
+        padding: 8px 16px; border-radius: 5px; cursor: pointer;
+        font-family: 'Poppins', sans-serif; font-size: 14px; margin-top: 5px;
+    }
+    #reader select {
+        padding: 5px; border-radius: 5px; border: 1px solid #ccc;
+        margin-bottom: 10px; font-family: 'Poppins', sans-serif; font-size: 14px;
+        width: 100%; max-width: 300px;
+    }
+    
     #reader__dashboard_section_csr span { display: none !important; }
 
     #status { display: block; width: 100%; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; transition: all 0.3s ease; background-color: #f0f2f5; color: #555; }
     .footer-text { margin-top: 15px; font-size: 11px; color: #888; }
+
     @media (max-width: 480px) { .logo { height: 50px; } .main-title { font-size: 1.8rem; } }
   </style>
 </head>
@@ -64,40 +92,47 @@
     </div>
 
     <div id="reader"></div>
-    <div id="status">Silakan scan QR Anda</div>
+    
+    <div id="status">Pilih metode scan di atas</div>
+
     <div class="footer-text">Panitia Presensi KKM XLVI</div>
   </div>
 
   <script>
     const WEBHOOK_URL = "https://icad2006.app.n8n.cloud/webhook/presensi-qr";
-    
-    function showStatus(text, type = "normal") {
-      const status = document.getElementById("status");
-      status.innerText = text;
-      
-      // Reset warna
-      status.style.background = "#f0f2f5"; status.style.color = "#555";
 
-      if (type === "success") {
-        status.style.background = "#c9ffd6"; status.style.color = "#007f1f";
+    function showStatus(text, type = "success") {
+      const status = document.getElementById("status");
+      
+      // Reset style
+      status.style.background = "#f0f2f5"; 
+      status.style.color = "#555";
+
+      if (type === "success" || type === true) {
+        // Hijau (Sukses)
+        status.style.background = "#c9ffd6";
+        status.style.color = "#007f1f";
       } else if (type === "warning") {
-        status.style.background = "#fff3cd"; status.style.color = "#856404";
-      } else if (type === "error") {
-        status.style.background = "#ffd6d6"; status.style.color = "#7f0000";
+        // Kuning/Oranye (Terlambat)
+        status.style.background = "#fff8c5";
+        status.style.color = "#856404";
+      } else {
+        // Merah (Error/Gagal)
+        status.style.background = "#ffd6d6";
+        status.style.color = "#7f0000";
       }
+      
+      status.innerText = text;
     }
 
     let isProcessing = false;
-    let html5QrcodeScanner;
+    let html5QrCode;
 
     function sendToWebhook(qrText) {
       if (isProcessing) return;
       isProcessing = true;
 
-      // Pause kamera sejenak
-      try { if(html5QrcodeScanner) html5QrcodeScanner.pause(); } catch(e) {}
-
-      showStatus("QR terbaca! Sedang memeriksa...", "normal");
+      showStatus("QR terbaca! Memeriksa...", "success");
 
       fetch(WEBHOOK_URL, {
         method: "POST",
@@ -107,82 +142,86 @@
           timestamp: new Date().toISOString()
         })
       })
-      .then(res => {
-          // PENTING: Jika n8n kirim 500, ini akan error. 
-          // Pastikan n8n kirim 200 meskipun datanya "Gagal".
-          if (!res.ok) throw new Error("Gagal HTTP: " + res.status);
-          return res.json();
-      })
-      .then(data => {
-        console.log("Respon n8n:", data); 
+        .then(res => res.json())
+        .then(data => {
+          console.log("Data dari n8n:", data);
 
-        // --- LOGIKA BARU BERDASARKAN STATUS DARI N8N ---
-        // Kita baca 'data.status' (success / warning / error)
-        
-        let namaSiswa = data.nama || (data.barcode && data.barcode.nama) || "Kak";
-        let pesanTampil = "";
-        let tipeWarna = "normal";
+          const isValid = data.valid === true;
+          const nama = data.nama || (data.barcode && data.barcode.nama) || "Kak";
 
-        if (data.status === "warning") {
-            // KASUS TERLAMBAT (Kuning)
-            tipeWarna = "warning";
-            pesanTampil = data.message || "Anda Terlambat!";
-        } 
-        else if (data.status === "error" || data.valid === false) {
-            // KASUS GAGAL / SUDAH PRESENSI (Merah)
-            tipeWarna = "error";
-            pesanTampil = data.message || "Gagal / Sudah Presensi!";
-        } 
-        else {
-            // KASUS SUKSES (Hijau)
-            tipeWarna = "success";
-            pesanTampil = "Terima Kasih " + namaSiswa;
-        }
+          const sesiValue = data.sesi || (data.barcode && data.barcode.sesi) || "";
+          
+          const isLate = sesiValue.toString().toUpperCase() === "TERLAMBAT" || 
+                         (data.message && data.message.toLowerCase().includes("terlambat"));
 
-        showStatus(pesanTampil, tipeWarna);
+          if (isLate) {
+            showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
+          } else if (isValid) {
+            showStatus("Terima kasih " + nama, "success");
+          } else {
+            showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
+          }
 
-        // Reset Scanner setelah delay
-        const delay = (tipeWarna === "success") ? 2500 : 4000;
-        setTimeout(() => { 
+          const delayTime = (isValid || isLate) ? 2500 : 4000;
+
+          setTimeout(() => {
             isProcessing = false;
-            try { if(html5QrcodeScanner) html5QrcodeScanner.resume(); } catch(e) {}
-            showStatus("Silakan scan QR Anda", "normal");
-        }, delay);
-      })
-      .catch(err => {
-        console.error("Error Fetch:", err);
-        // Ini yang muncul kalau n8n masih kirim 500
-        showStatus("Gagal Koneksi (Server Error 500). Cek n8n Anda.", "error");
-        
-        setTimeout(() => {
+            if (html5QrCode && html5QrCode.getState() === 2) { 
+              html5QrCode.resume();
+            }
+            showStatus("Silakan scan QR Anda", true);
+          }, delayTime);
+        })
+        .catch(err => {
+          console.error(err);
+          showStatus("Gagal koneksi. Coba lagi.", false);
+
+          setTimeout(() => {
             isProcessing = false;
-            try { if(html5QrcodeScanner) html5QrcodeScanner.resume(); } catch(e) {}
-            showStatus("Silakan scan QR Anda", "normal");
-        }, 3000);
-      });
+            if (html5QrCode && html5QrCode.getState() === 2) {
+              html5QrCode.resume();
+            }
+            showStatus("Silakan scan QR Anda", true);
+          }, 3000);
+        });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
+      if (isProcessing) return;
+      
+      if (html5QrCode) {
+        html5QrCode.pause();
+      }
+      
       sendToWebhook(decodedText);
     }
 
-    // --- INISIALISASI SETELAH HALAMAN SIAP ---
-    window.onload = function() {
-        // Konfigurasi Paling Aman & Stabil untuk HP
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { 
-                fps: 10,
-                qrbox: 200, // Ukuran kotak kecil agar tidak crash di HP
-                rememberLastUsedCamera: true,
-                showTorchButtonIfSupported: true,
-                aspectRatio: 1.0 
-            },
-            /* verbose= */ false
-        );
-        html5QrcodeScanner.render(onScanSuccess);
-    };
-  </script>
+    function onScanError(errorMessage) {
+      console.log(errorMessage);
+    }
 
+    document.addEventListener('DOMContentLoaded', function() {
+      html5QrCode = new Html5Qrcode("reader");
+      
+      const config = { 
+        fps: 20,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+      };
+      
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess,
+        onScanError
+      ).then(() => {
+        showStatus("Kamera siap. Silakan scan QR Anda", true);
+      }).catch(err => {
+        console.error(err);
+        showStatus("Gagal mengakses kamera. Pastikan izin kamera diberikan.", false);
+      });
+    });
+  </script>
 </body>
 </html>
