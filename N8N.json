@@ -1,0 +1,639 @@
+{
+  "name": "Presensi QR Panitia",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "presensi-qr",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "098a9856-9c65-40a0-bd18-150be3a4f6d5",
+      "name": "Presensi Panitia KKM",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        384
+      ],
+      "webhookId": "41a5159a-651e-483f-b883-cb72fb58723c",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "functionCode": "const input = items[0].json;\n\nlet output;\n\n// Fungsi untuk membuat jam WIB (Asia/Jakarta)\n// Hasilnya: \"DD/MM/YYYY, HH.mm.ss\" (Format Indonesia)\nfunction getWIBTime() {\n    return new Date().toLocaleString(\"id-ID\", {\n        timeZone: \"Asia/Jakarta\",\n        year: \"numeric\",\n        month: \"2-digit\",\n        day: \"2-digit\",\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        second: \"2-digit\",\n        hour12: false\n    });\n}\n\ntry {\n    // 1. Parse JSON string dari QR Code\n    // Asumsi isi QR: {\"id\": \"123\", \"nama\": \"Budi\", ...}\n    let barcodeData;\n    \n    // Cek apakah input.body.id berupa object atau string\n    if (typeof input.body.id === 'string') {\n        barcodeData = JSON.parse(input.body.id);\n    } else {\n        barcodeData = input.body.id || { id: \"Unknown\" };\n    }\n\n    // 2. Gabungkan data\n    output = {\n        ...barcodeData,              // Masukkan semua data dari QR (nama, divisi, dll)\n        original_scan_time: input.body.timestamp, // (Opsional) Simpan waktu asli dari browser\n        timestamp: getWIBTime()      // INI YANG BARU: Waktu Server n8n dikonversi ke WIB\n    };\n    \n} catch (err) {\n    // Jika QR code bukan format JSON yang valid\n    output = {\n        status: \"invalid\",\n        error: err.message,\n        timestamp: getWIBTime()\n    };\n}\n\n// Return output ke node selanjutnya\nreturn [{ json: output }];"
+      },
+      "id": "08e91389-41cd-4621-9afd-f66170b0029a",
+      "name": "Parse Barcode",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        384
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Ambil data input (support format lama & baru n8n)\nconst input = items[0].json; \n\n// --- BAGIAN INI MEMASTIKAN JAM SERVER DIUBAH KE WIB ---\n// Kita generate waktu baru di sini agar tidak tergantung kiriman browser yang sering error\nconst serverTime = new Date();\nconst jakartaTimeStr = serverTime.toLocaleString(\"en-US\", { timeZone: \"Asia/Jakarta\" });\nconst jakartaDate = new Date(jakartaTimeStr);\n\n// Ambil Jam (0-23)\nconst hour = jakartaDate.getHours();\n\n// --- LOGIKA RANGE WAKTU KAMU (TIDAK SAYA UBAH) ---\nlet sesi = \"\";\n\nif (hour >= 6 && hour < 12) {\n    sesi = \"PAGI\";\n} \nelse if (hour >= 12 && hour < 15) {\n    sesi = \"Siang\";\n} \nelse if (hour >= 15 && hour < 18) {\n    sesi = \"SORE\";\n} \nelse {\n    sesi = \"TERLAMBAT\";\n}\n\n// --- PERSIAPAN OUTPUT ---\n// Kita parse ID data kalau bentuknya string JSON\nlet finalData = input;\ntry {\n    if (typeof input.id === 'string' && input.id.startsWith('{')) {\n        const parsedId = JSON.parse(input.id);\n        finalData = { ...input, ...parsedId };\n    } else if (input.body && typeof input.body.id === 'string') {\n         // Handle jika data ada di dalam 'body' (dari webhook POST)\n         const parsedId = JSON.parse(input.body.id);\n         finalData = { ...input, ...parsedId };\n    }\n} catch (e) {\n    // Abaikan jika gagal parse, pakai data mentah\n}\n\n// Format waktu cantik untuk laporan (DD/MM/YYYY HH.mm)\nconst formattedTime = jakartaDate.toLocaleString(\"id-ID\", {\n    year: \"numeric\", month: \"2-digit\", day: \"2-digit\",\n    hour: \"2-digit\", minute: \"2-digit\", second: \"2-digit\",\n    hour12: false\n});\n\n// Kembalikan data lengkap\nreturn [{\n    ...finalData,\n    timestamp: formattedTime, // Waktu real-time server (WIB)\n    jam_scan: hour,           // Untuk debug melihat jam berapa terbaca\n    sesi: sesi                // Status Pagi/Sore/Terlambat\n}];"
+      },
+      "id": "ce83740c-d64e-4878-a9e5-ff43ef629157",
+      "name": "Tentukan Sesi",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        384
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1r2KxSNgT6I2uOFzN7qTSmR9iejB_3H3GlYYieFJOM9A",
+          "mode": "list",
+          "cachedResultName": "REKAP_PRESENSI_PANITIA_KKM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r2KxSNgT6I2uOFzN7qTSmR9iejB_3H3GlYYieFJOM9A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Rekap",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r2KxSNgT6I2uOFzN7qTSmR9iejB_3H3GlYYieFJOM9A/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "899b0719-5444-4f09-ae7a-ed17a11b35f9",
+      "name": "Cek Sudah Absen?",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        -576,
+        384
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7DdwUs7LylddF5T9",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid && $('Tentukan Sesi').first().json.sesi != \"TERLAMBAT\" }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "14e6de5d-d9e0-4427-9007-3dce959064cb",
+      "name": "Cek Sudah Sesi Ini?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        320,
+        384
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1vL_9xj3B5DQ7pL3zndI-ew-tC5RIbI47Bh0j5QgrIXY",
+          "mode": "list",
+          "cachedResultName": "REKAP_PRESENSI_PANITIA_KKM_D",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vL_9xj3B5DQ7pL3zndI-ew-tC5RIbI47Bh0j5QgrIXY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Rekap",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vL_9xj3B5DQ7pL3zndI-ew-tC5RIbI47Bh0j5QgrIXY/edit#gid=0"
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "id",
+              "fieldValue": "={{ $('Tentukan Sesi').first().json.id }}"
+            },
+            {
+              "fieldId": "nama",
+              "fieldValue": "={{ $('Tentukan Sesi').first().json.nama }}"
+            },
+            {
+              "fieldId": "departemen",
+              "fieldValue": "={{ $('Tentukan Sesi').first().json.departemen }}"
+            },
+            {
+              "fieldId": "divisi",
+              "fieldValue": "={{ $('Tentukan Sesi').first().json.divisi }}"
+            },
+            {
+              "fieldId": "waktu",
+              "fieldValue": "={{ $('Tentukan Sesi').first().json.timestamp }}"
+            },
+            {
+              "fieldId": "sesi",
+              "fieldValue": "={{ $('Tentukan Sesi').first().json.sesi }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "18f1120c-6fa4-434c-9d76-78ee37954d98",
+      "name": "Tulis ke Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        544,
+        192
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7DdwUs7LylddF5T9",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Input from barcode (single item)\nconst barcode = $items(\"Data untuk dicocokkan\")[0].json;\n\n// Input from Google Sheets (many items)\nconst rowsRaw = $items(\"Cek Sudah Absen?\").map(i => i.json);\n\nconst dataSesi = $items(\"Tentukan Sesi\")[0].json;\n\n// Normalize rows (prevent errors)\nconst rows = Array.isArray(rowsRaw) ? rowsRaw : [rowsRaw];\n\n// Output only ONE item\nreturn {\n  json: {\n    barcode,\n    rows\n  }\n};\n"
+      },
+      "id": "d5f6e002-bf19-488a-8687-d75100fb9a57",
+      "name": "Combine Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        384
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Ambil entire JSON input\nconst input = $input.item.json;\n\n// Data barcode (ID, sesi, nama, dll)\nconst data = input.barcode;\n\n// Rows hasil dari Google Sheet\nconst sheetRows = input.rows || [];\n\n// Cek apakah ID & SESI sudah ada\nconst alreadyExists = sheetRows.some(row => {\n    return row.id === data.id && row.sesi === data.sesi;\n});\n\n// Jika sudah ada → valid = false, jika belum → valid = true\nconst valid = !alreadyExists;\n\nreturn {\n    json: {\n        barcode: data,\n        rows: sheetRows,\n        valid\n    }\n};"
+      },
+      "id": "3265c3b8-5819-4d7d-bf48-704998363137",
+      "name": "Valid or No?",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        384
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "09deedae-9078-4447-9740-9d58c64f5ce4",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "86a681f5-bae9-48a6-b2f4-acb2b64266f4",
+              "name": "sesi",
+              "value": "={{ $json.sesi }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -800,
+        384
+      ],
+      "id": "a1e28034-90eb-4f74-a4b1-f085c8974eee",
+      "name": "Data untuk dicocokkan"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1r2KxSNgT6I2uOFzN7qTSmR9iejB_3H3GlYYieFJOM9A",
+          "mode": "list",
+          "cachedResultName": "REKAP_PRESENSI_PANITIA_KKM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r2KxSNgT6I2uOFzN7qTSmR9iejB_3H3GlYYieFJOM9A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Rekap",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r2KxSNgT6I2uOFzN7qTSmR9iejB_3H3GlYYieFJOM9A/edit#gid=0"
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "id",
+              "fieldValue": "={{ $('Data untuk dicocokkan').first().json.id }}"
+            },
+            {
+              "fieldId": "sesi",
+              "fieldValue": "={{ $('Tentukan Sesi').first().json.sesi }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3089047b-f9cc-48b7-9540-8693b35f48a9",
+      "name": "Tulis ke Google Sheets1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        768,
+        192
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7DdwUs7LylddF5T9",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": "="
+        }
+      },
+      "id": "50e57b50-3e20-430a-9545-497fcaf8d014",
+      "name": "Respon ke web",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d47c4bfb-5bf3-4607-998e-19e91578780d",
+              "name": "=id",
+              "value": "={{ $('Tentukan Sesi').first().json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "44a17b13-684b-419e-bf57-5516392ecefa",
+              "name": "=nama",
+              "value": "={{ $('Tentukan Sesi').first().json.nama }}",
+              "type": "string"
+            },
+            {
+              "id": "82fd6c67-e7b4-4397-9ab0-eef919a0a630",
+              "name": "=departemen",
+              "value": "={{ $('Tentukan Sesi').first().json.departemen }}",
+              "type": "string"
+            },
+            {
+              "id": "5aecafbf-3260-4044-8576-64b4a0e3635d",
+              "name": "divisi",
+              "value": "={{ $('Tentukan Sesi').first().json.divisi }}",
+              "type": "string"
+            },
+            {
+              "id": "fb1cae99-7369-4067-b438-6607bcf247ad",
+              "name": "=valid",
+              "value": "={{ $json.valid }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        384
+      ],
+      "id": "e5e533e2-3ee2-4bc1-a467-ff5ae621c7af",
+      "name": "Kirim Data ke Web",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d25cf2f3-b70a-4bf8-97c8-afeb61e6ff32",
+              "leftValue": "={{ $('Tentukan Sesi').first().json.sesi == \"TERLAMBAT\"}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        480
+      ],
+      "id": "7b64819d-86a3-4e86-b668-2ecdcd5211e9",
+      "name": "Terlambat",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"message\": \"Maaf Anda Tidak Dapat Melakukan Presensi Kembali\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        768,
+        576
+      ],
+      "id": "a7db20bc-c21d-4245-914f-ad45f8829006",
+      "name": "Tak bisa presensi"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"warning\",\n  \"message\": \"Maaf Anda Terlambat!\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        768,
+        384
+      ],
+      "id": "b711d55c-b132-4d30-b2b7-7f0de45c41d5",
+      "name": "Terlambat1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"nama\": \"{{ $('Parse Barcode').first().json.nama }}\",\n  \"message\": \"Presensi Berhasil! Terima Kasih {{ $('Parse Barcode').first().json.nama }}\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        992,
+        192
+      ],
+      "id": "0ad9a5d7-3a1d-4070-be62-13f76fe79abe",
+      "name": "Berhasil"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        160,
+        320
+      ],
+      "typeVersion": 1,
+      "id": "f4090674-818a-4e0e-992b-a908d567e34a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        160,
+        320
+      ],
+      "typeVersion": 1,
+      "id": "33f8143b-f61b-4e96-b496-6fe57746929c",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Presensi Panitia KKM": {
+      "main": [
+        [
+          {
+            "node": "Parse Barcode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Barcode": {
+      "main": [
+        [
+          {
+            "node": "Tentukan Sesi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tentukan Sesi": {
+      "main": [
+        [
+          {
+            "node": "Data untuk dicocokkan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cek Sudah Absen?": {
+      "main": [
+        [
+          {
+            "node": "Combine Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cek Sudah Sesi Ini?": {
+      "main": [
+        [
+          {
+            "node": "Tulis ke Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Terlambat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tulis ke Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Tulis ke Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Data": {
+      "main": [
+        [
+          {
+            "node": "Valid or No?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid or No?": {
+      "main": [
+        [
+          {
+            "node": "Kirim Data ke Web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data untuk dicocokkan": {
+      "main": [
+        [
+          {
+            "node": "Cek Sudah Absen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tulis ke Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Berhasil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respon ke web": {
+      "main": [
+        []
+      ]
+    },
+    "Kirim Data ke Web": {
+      "main": [
+        [
+          {
+            "node": "Cek Sudah Sesi Ini?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Terlambat": {
+      "main": [
+        [
+          {
+            "node": "Terlambat1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tak bisa presensi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tak bisa presensi": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false
+  },
+  "versionId": "0871aebc-9b08-487f-8663-a6c38a92da42",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "667104ea704e6cac1d88ba0a8ce6c10baf63804b6b0cd604674e45fc844f9e57"
+  },
+  "id": "gzbuTT2tIY2jBl2e",
+  "tags": []
+}
