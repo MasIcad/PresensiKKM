@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     /* --- RESET & GLOBAL --- */
@@ -104,27 +104,39 @@
 
   <script>
     const WEBHOOK_URL = "https://icad2006.app.n8n.cloud/webhook/presensi-qr";
-    
-    function showStatus(text, success = true) {
+
+    function showStatus(text, type = "success") {
       const status = document.getElementById("status");
-      status.style.background = success ? "#c9ffd6" : "#ffd6d6";
-      status.style.color = success ? "#007f1f" : "#7f0000";
+      
+      // Reset style
+      status.style.background = "#f0f2f5"; 
+      status.style.color = "#555";
+
+      if (type === "success" || type === true) {
+        // Hijau (Sukses)
+        status.style.background = "#c9ffd6";
+        status.style.color = "#007f1f";
+      } else if (type === "warning") {
+        // Kuning/Oranye (Terlambat)
+        status.style.background = "#fff8c5";
+        status.style.color = "#856404";
+      } else {
+        // Merah (Error/Gagal)
+        status.style.background = "#ffd6d6";
+        status.style.color = "#7f0000";
+      }
+      
       status.innerText = text;
     }
 
     let isProcessing = false;
-    let html5QrcodeScanner; 
+    let html5QrCode;
 
     function sendToWebhook(qrText) {
       if (isProcessing) return;
       isProcessing = true;
 
-      // Pause kamera jika objek scanner sudah ada
-      if (html5QrcodeScanner) { 
-          try { html5QrcodeScanner.pause(); } catch(e) {}
-      }
-
-      showStatus("QR terbaca! Memeriksa...", true);
+      showStatus("QR terbaca! Memeriksa...", "success");
 
       fetch(WEBHOOK_URL, {
         method: "POST",
@@ -134,74 +146,96 @@
           timestamp: new Date().toISOString()
         })
       })
-      .then(res => {
-          if (res.ok) return res.json();
-          throw new Error("Gagal HTTP: " + res.status);
-      })
-      .then(data => {
-        console.log("Jawaban n8n:", data);
-        const isValid = data.valid === true;
-        const namaSiswa = data.nama || "Kak"; 
+        .then(res => res.json())
+        .then(data => {
+          // Debugging: Lihat isi data asli dari n8n di Console browser (tekan F12)
+          console.log("Data dari n8n:", data);
 
-        if (isValid) {
-            showStatus("Terima Kasih " + namaSiswa, true);
-        } else {
-            const pesanGagal = data.message || "Anda sudah presensi!";
-            showStatus(pesanGagal, false);
-        }
+          const isValid = data.valid === true;
+          // Ambil nama, cek juga kalau ada di dalam object barcode
+          const nama = data.nama || (data.barcode && data.barcode.nama) || "Kak";
 
-        const delayReset = isValid ? 2000 : 4000;
-        setTimeout(() => { 
-            if (html5QrcodeScanner) { 
-                try { html5QrcodeScanner.resume(); } catch(e) {}
-            }
+          // --- PERBAIKAN UTAMA DISINI ---
+          // Kita cari status sesi di level atas (data.sesi) ATAU di dalam barcode (data.barcode.sesi)
+          const sesiValue = data.sesi || (data.barcode && data.barcode.sesi) || "";
+          
+          const isLate = sesiValue.toString().toUpperCase() === "TERLAMBAT" || 
+                         (data.message && data.message.toLowerCase().includes("terlambat"));
+          // ------------------------------
+
+          if (isLate) {
+            // Pakai backtick (`) agar variabel nama muncul
+            showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
+          } else if (isValid) {
+            showStatus("Terima kasih " + nama, "success");
+          } else {
+            showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
+          }
+
+          const delayTime = (isValid || isLate) ? 2500 : 4000;
+
+          setTimeout(() => {
             isProcessing = false;
-            showStatus("Silakan scan QR Anda", true);
-        }, delayReset);
-      })
-      .catch(err => {
-        console.error("Error Fetch:", err);
-        showStatus("Gagal Koneksi. Coba lagi.", false);
-        setTimeout(() => {
-            if (html5QrcodeScanner) { 
-                try { html5QrcodeScanner.resume(); } catch(e) {}
+            if (html5QrCode && html5QrCode.getState() === 2) { 
+              html5QrCode.resume();
             }
-            isProcessing = false;
             showStatus("Silakan scan QR Anda", true);
-        }, 3000);
-      });
+          }, delayTime);
+        })
+        .catch(err => {
+          console.error(err);
+          showStatus("Gagal koneksi. Coba lagi.", false);
+
+          setTimeout(() => {
+            isProcessing = false;
+            if (html5QrCode && html5QrCode.getState() === 2) {
+              html5QrCode.resume();
+            }
+            showStatus("Silakan scan QR Anda", true);
+          }, 3000);
+        });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
+      if (isProcessing) return;
+      
+      // Pause scanner
+      if (html5QrCode) {
+        html5QrCode.pause();
+      }
+      
+      // Kirim ke webhook
       sendToWebhook(decodedText);
     }
 
-    // --- INISIALISASI SETELAH HALAMAN SIAP ---
-    // Menggunakan window.onload untuk memastikan library & elemen sudah siap
-    window.onload = function() {
-        try {
-            // Konfigurasi Standar dan Stabil
-            html5QrcodeScanner = new Html5QrcodeScanner(
-              "reader", 
-              { 
-                fps: 10,
-                qrbox: 250, 
-                // Fitur UI Bawaan
-                rememberLastUsedCamera: true,
-                showTorchButtonIfSupported: true,
-                aspectRatio: 1.0 
-              },
-              /* verbose= */ false
-            );
+    function onScanError(errorMessage) {
+      // Tidak perlu melakukan apa-untuk error biasa
+      console.log(errorMessage);
+    }
 
-            html5QrcodeScanner.render(onScanSuccess);
-            
-        } catch (err) {
-            console.error("Error init scanner:", err);
-            showStatus("Gagal memuat kamera: " + err, false);
-        }
-    };
+    // Inisialisasi Scanner
+    document.addEventListener('DOMContentLoaded', function() {
+      html5QrCode = new Html5Qrcode("reader");
+      
+      const config = { 
+        fps: 20,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+      };
+      
+      html5QrCode.start(
+        { facingMode: "environment" }, // Prefer kamera belakang
+        config,
+        onScanSuccess,
+        onScanError
+      ).then(() => {
+        showStatus("Kamera siap. Silakan scan QR Anda", true);
+      }).catch(err => {
+        console.error(err);
+        showStatus("Gagal mengakses kamera. Pastikan izin kamera diberikan.", false);
+      });
+    });
   </script>
-
 </body>
 </html>
