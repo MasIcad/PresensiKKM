@@ -156,7 +156,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
       "position": [
-        544,
+        768,
         192
       ],
       "credentials": {
@@ -260,7 +260,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
       "position": [
-        768,
+        992,
         192
       ],
       "credentials": {
@@ -373,6 +373,7 @@
         "respondWith": "json",
         "responseBody": "{\n  \"status\": \"error\",\n  \"message\": \"Maaf Anda Tidak Dapat Melakukan Presensi Kembali\"\n}",
         "options": {
+          "responseCode": 200,
           "responseHeaders": {
             "entries": [
               {
@@ -390,13 +391,15 @@
         576
       ],
       "id": "a7db20bc-c21d-4245-914f-ad45f8829006",
-      "name": "Tak bisa presensi"
+      "name": "Tak bisa presensi",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\n  \"status\": \"warning\",\n  \"message\": \"Maaf Anda Terlambat!\"\n}",
         "options": {
+          "responseCode": 200,
           "responseHeaders": {
             "entries": [
               {
@@ -414,13 +417,15 @@
         384
       ],
       "id": "b711d55c-b132-4d30-b2b7-7f0de45c41d5",
-      "name": "Terlambat1"
+      "name": "Terlambat1",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={\n  \"status\": \"success\",\n  \"nama\": \"{{ $('Parse Barcode').first().json.nama }}\",\n  \"message\": \"Presensi Berhasil! Terima Kasih {{ $('Parse Barcode').first().json.nama }}\"\n}",
         "options": {
+          "responseCode": 200,
           "responseHeaders": {
             "entries": [
               {
@@ -434,33 +439,12 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        992,
+        544,
         192
       ],
       "id": "0ad9a5d7-3a1d-4070-be62-13f76fe79abe",
-      "name": "Berhasil"
-    },
-    {
-      "parameters": {},
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        160,
-        320
-      ],
-      "typeVersion": 1,
-      "id": "f4090674-818a-4e0e-992b-a908d567e34a",
-      "name": "Sticky Note"
-    },
-    {
-      "parameters": {},
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        160,
-        320
-      ],
-      "typeVersion": 1,
-      "id": "33f8143b-f61b-4e96-b496-6fe57746929c",
-      "name": "Sticky Note1"
+      "name": "Berhasil",
+      "onError": "continueErrorOutput"
     }
   ],
   "pinData": {},
@@ -513,7 +497,7 @@
       "main": [
         [
           {
-            "node": "Tulis ke Google Sheets",
+            "node": "Berhasil",
             "type": "main",
             "index": 0
           }
@@ -573,13 +557,7 @@
     },
     "Tulis ke Google Sheets1": {
       "main": [
-        [
-          {
-            "node": "Berhasil",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Respon ke web": {
@@ -620,16 +598,26 @@
       "main": [
         []
       ]
+    },
+    "Berhasil": {
+      "main": [
+        [
+          {
+            "node": "Tulis ke Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
     "callerPolicy": "workflowsFromSameOwner",
-    "executionTimeout": -1,
     "availableInMCP": false
   },
-  "versionId": "0871aebc-9b08-487f-8663-a6c38a92da42",
+  "versionId": "04c5d05a-8d6c-450c-a33f-0af48bb661d9",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "667104ea704e6cac1d88ba0a8ce6c10baf63804b6b0cd604674e45fc844f9e57"
