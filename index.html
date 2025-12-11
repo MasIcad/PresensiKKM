@@ -142,48 +142,48 @@
           timestamp: new Date().toISOString()
         })
       })
-        .then(res => res.json())
-        .then(data => {
-          console.log("Data dari n8n:", data);
+      .then(res => res.json())
+      .then(data => {
+        console.log("Data dari n8n:", data);
 
-          const isValid = data.valid === true;
-          const nama = data.nama || (data.barcode && data.barcode.nama) || "Kak";
+        const isValid = data.valid === true;
+        const nama = data.nama || (data.barcode && data.barcode.nama) || "Kak";
 
-          const sesiValue = data.sesi || (data.barcode && data.barcode.sesi) || "";
-          
-          const isLate = sesiValue.toString().toUpperCase() === "TERLAMBAT" || 
-                         (data.message && data.message.toLowerCase().includes("terlambat"));
+        const sesiValue = data.sesi || (data.barcode && data.barcode.sesi) || "";
+        
+        const isLate = sesiValue.toString().toUpperCase() === "TERLAMBAT" || 
+                        (data.message && data.message.toLowerCase().includes("terlambat"));
 
-          if (isLate) {
-            showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
-          } else if (isValid) {
-            showStatus("Terima kasih " + nama, "success");
-          } else {
-            showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
+        if (isLate) {
+          showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
+        } else if (isValid) {
+          showStatus("Terima kasih " + nama, "success");
+        } else {
+          showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
+        }
+
+        const delayTime = (isValid || isLate) ? 2500 : 4000;
+
+        setTimeout(() => {
+          isProcessing = false;
+          if (html5QrCode && html5QrCode.getState() === 2) { 
+            html5QrCode.resume();
           }
+          showStatus("Silakan scan QR Anda", true);
+        }, delayTime);
+      })
+      .catch(err => {
+        console.error(err);
+        showStatus("Gagal koneksi. Coba lagi.", false);
 
-          const delayTime = (isValid || isLate) ? 2500 : 4000;
-
-          setTimeout(() => {
-            isProcessing = false;
-            if (html5QrCode && html5QrCode.getState() === 2) { 
-              html5QrCode.resume();
-            }
-            showStatus("Silakan scan QR Anda", true);
-          }, delayTime);
-        })
-        .catch(err => {
-          console.error(err);
-          showStatus("Gagal koneksi. Coba lagi.", false);
-
-          setTimeout(() => {
-            isProcessing = false;
-            if (html5QrCode && html5QrCode.getState() === 2) {
-              html5QrCode.resume();
-            }
-            showStatus("Silakan scan QR Anda", true);
-          }, 3000);
-        });
+        setTimeout(() => {
+          isProcessing = false;
+          if (html5QrCode && html5QrCode.getState() === 2) {
+            html5QrCode.resume();
+          }
+          showStatus("Silakan scan QR Anda", true);
+        }, 3000);
+      });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
