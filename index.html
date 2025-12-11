@@ -160,19 +160,19 @@
             // KASUS TERLAMBAT (Kuning)
             // Paksa pakai format Anda: "Maaf Budi, Anda Terlambat!"
             showStatus(`Maaf ${namaSiswa}, Anda Terlambat!`, "warning");
-            delayTime = 4000;
+            delayTime = 1500;
 
           } else if (data.status === "success" || data.valid === true) {
             // KASUS SUKSES (Hijau)
             // Paksa pakai format Anda: "Terima kasih Budi"
             showStatus("Terima kasih " + namaSiswa, "success");
-            delayTime = 2500;
+            delayTime = 1000;
 
           } else {
             // KASUS ERROR/GAGAL (Merah)
             // Kalau ini biarkan pakai pesan dari n8n agar tahu errornya apa
             showStatus(data.message || "Gagal Presensi / Data Tidak Ditemukan", false);
-            delayTime = 4000;
+            delayTime = 1500;
           }
 
           // 3. RESET SCANNER
