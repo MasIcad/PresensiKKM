@@ -142,36 +142,46 @@
           timestamp: new Date().toISOString()
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        console.log("Data dari n8n:", data);
+        .then(res => res.json())
+        .then(data => {
+          console.log("Data dari n8n:", data);
 
-        const isValid = data.valid === true;
-        const nama = data.nama || (data.barcode && data.barcode.nama) || "Kak";
+          // 1. AMBIL NAMA (Prioritas: Data Root > Barcode > "Kak")
+          // Kita pakai "Kak" kalau n8n tidak kirim nama (misal saat error/terlambat)
+          let namaSiswa = data.nama || (data.barcode && data.barcode.nama) || "Kak";
 
-        const sesiValue = data.sesi || (data.barcode && data.barcode.sesi) || "";
-        
-        const isLate = sesiValue.toString().toUpperCase() === "TERLAMBAT" || 
-                        (data.message && data.message.toLowerCase().includes("terlambat"));
+          // 2. CEK STATUS DARI N8N (success / warning / error)
+          // Kita abaikan 'data.message' dari n8n untuk Sukses & Warning
+          // agar teks di website sesuai keinginan Anda.
 
-        if (isLate) {
-          showStatus(data.message || `Maaf ${nama}, Anda Terlambat!`, "warning");
-        } else if (isValid) {
-          showStatus("Terima kasih " + nama, "success");
-        } else {
-          showStatus(data.message || "Anda sudah presensi atau Data tidak ditemukan!", false);
-        }
+          let delayTime = 3000;
 
-        const delayTime = (isValid || isLate) ? 2500 : 4000;
+          if (data.status === "warning") {
+            // KASUS TERLAMBAT (Kuning)
+            // Paksa pakai format Anda: "Maaf Budi, Anda Terlambat!"
+            showStatus(`Maaf ${namaSiswa}, Anda Terlambat!`, "warning");
+            delayTime = 4000;
 
-        setTimeout(() => {
-          isProcessing = false;
-          if (html5QrCode && html5QrCode.getState() === 2) { 
-            html5QrCode.resume();
+          } else if (data.status === "success" || data.valid === true) {
+            // KASUS SUKSES (Hijau)
+            // Paksa pakai format Anda: "Terima kasih Budi"
+            showStatus("Terima kasih " + namaSiswa, "success");
+            delayTime = 2500;
+
+          } else {
+            // KASUS ERROR/GAGAL (Merah)
+            // Kalau ini biarkan pakai pesan dari n8n agar tahu errornya apa
+            showStatus(data.message || "Gagal Presensi / Data Tidak Ditemukan", false);
+            delayTime = 4000;
           }
-          showStatus("Silakan scan QR Anda", true);
-        }, delayTime);
-      })
+
+          // 3. RESET SCANNER
+          setTimeout(() => {
+            isProcessing = false;
+            // Html5QrcodeScanner otomatis lanjut, hanya update status text
+            showStatus("Silakan scan QR Anda", true);
+          }, delayTime);
+        })
       .catch(err => {
         console.error(err);
         showStatus("Gagal koneksi. Coba lagi.", false);
