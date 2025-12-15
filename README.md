@@ -1,70 +1,92 @@
-# PresensiKKM
-# 📱 Sistem Presensi QR Code
+# alternate-pres-kkmxlvi
+# 📷 PANDUAN SISTEM PRESENSI QR - KKM XLVI
+**Fakultas Teknik Universitas Brawijaya**
 
-Sistem presensi digital menggunakan QR Code, terintegrasi otomatis dengan Google Sheets.
-
----
-
-## 📢 PANDUAN UNTUK PESERTA (Bisa dicetak & ditempel di meja)
-
-**Cara Melakukan Presensi:**
-1.  **Siapkan QR Code** Anda (dari HP atau kartu ID).
-2.  **Arahkan QR Code** ke kamera laptop yang tersedia.
-3.  Tunggu hingga layar berkedip dan muncul pesan:
-    * ✅ **HIJAU:** "Terima Kasih [Nama Anda]" (Berhasil).
-    * ❌ **MERAH:** "Maaf, Anda sudah presensi" (Data ganda).
-4.  Jika berhasil, silakan mengambil konsumsi.
+Dokumen ini berisi panduan teknis bagi panitia yang bertugas menjaga pos presensi. Mohon dibaca dengan teliti demi kelancaran arus 2.000+ peserta.
 
 ---
 
-## 👮 PANDUAN UNTUK OPERATOR / PANITIA JAGA
+## 🔗 Link Penting
+Simpan link berikut atau *bookmark* di browser HP/Laptop kalian:
 
-**Persiapan Sebelum Acara:**
-1.  **Internet Wajib Stabil:** Pastikan laptop terkoneksi WiFi/Hotspot yang kencang.
-2.  **Cek Cahaya:** Jangan biarkan kamera menghadap cahaya silau (backlight). Pastikan wajah/QR peserta terang.
-3.  **Aktifkan Sistem:** Hubungi tim IT untuk memastikan Workflow n8n sudah "Active".
+* **Halaman Scan (Utama):** `alternate-pres-kkmxlvi.vercel.app`
+* **Halaman Admin (Cek Data):** `alternate-pres-kkmxlvi.vercel.app/admin`
 
-**Cara Mengatasi Masalah (Troubleshooting):**
-* **Masalah:** Muncul tulisan *"Server Error / Cek Koneksi"* terus-menerus.
-    * **Solusi:** Cek internet laptop. Jika internet aman, tekan tombol **F5** (Refresh) pada browser.
-* **Masalah:** Kamera tidak mau scan (diam saja).
-    * **Solusi:** Refresh halaman (F5). Pastikan tidak ada aplikasi lain (seperti Zoom/Meet) yang menggunakan kamera.
-* **Masalah:** Muncul pesan Merah *"Maaf Anda Sudah Presensi"*.
-    * **Solusi:** Jelaskan pada peserta bahwa data mereka **sudah masuk** sebelumnya. Tidak perlu scan ulang.
+* **Halaman Scan (Cadangan):** `presensi-kkm.vercel.app`
+* **Halaman Admin (Cek Data):** `presensi-kkm.vercel.app/admin`
 
 ---
 
-## 🛠️ DOKUMENTASI TEKNIS (Untuk Admin/Developer)
+## 🛠️ Persiapan Sebelum Jaga (Wajib!)
 
-Sistem ini menggunakan **n8n** sebagai backend dan **Google Sheets** sebagai database.
-
-### 1. Konfigurasi n8n (Wajib Diperhatikan)
-Jika membuat ulang workflow, pastikan settingan ini benar agar tidak Error CORS:
-
-* **Node Webhook (Start):**
-    * Method: `POST`
-    * Respond: `Using 'Respond to Webhook' Node`
-    * Authentication: `None`
-* **Node Respond to Webhook (End):**
-    * Respond With: `JSON`
-    * **Response Code:** KOSONGKAN (Jangan diisi angka).
-    * **Response Headers (Penting!):**
-        * Name: `Access-Control-Allow-Origin`
-        * Value: `*`
-    * **Response Body (Format JSON):**
-        ```json
-        {
-           "valid": true,
-           "nama": "{{ $json.nama }}",
-           "message": "Pesan sukses/gagal di sini"
-        }
-        ```
-
-### 2. Deployment (Production)
-* Pastikan URL di file HTML menggunakan **Production URL** (tanpa akhiran `-test`).
-    * Contoh Benar: `.../webhook/presensi-qr`
-    * Contoh Salah: `.../webhook-test/presensi-qr`
-* **PENTING:** Tombol **"Active"** di pojok kanan atas n8n harus menyala **HIJAU** agar sistem berjalan 24 jam.
+1.  **Baterai Penuh & Powerbank:**
+    Menyalakan kamera browser memakan banyak baterai. Pastikan baterai HP/Laptop 100% sebelum mulai dan **selalu sedia Powerbank** di meja.
+2.  **Koneksi Internet Cadangan:**
+    Jangan hanya mengandalkan WiFi lokasi. Siapkan minimal satu HP dengan kuota data (Tethering) dari provider yang sinyalnya kuat di lokasi, jaga-jaga jika WiFi *down* karena overload.
+3.  **Kecerahan Layar & Pencahayaan:**
+    * Pastikan area meja presensi cukup terang (bantu pakai lampu belajar/senter HP jika malam).
+    * Minta peserta menaikkan *brightness* HP mereka jika QR code di HP mereka sulit terbaca.
 
 ---
-*Dibuat untuk keperluan Event [KKM (Kemah Kerja Mahasiswa)]*
+
+## 🚦 SOP Melakukan Scanning (Sangat Penting)
+
+Sistem ini menggunakan *Cloud Queue* agar data tidak tabrakan. Ikuti langkah ini agar tidak macet:
+
+1.  Buka Link Scanner.
+2.  Izinkan akses kamera (**Allow**).
+3.  Arahkan kamera ke QR Code peserta.
+4.  **TUNGGU HINGGA MUNCUL TULISAN HIJAU.**
+    > ✅ *"Presensi Berhasil! Terima Kasih [Nama]"*
+5.  **JANGAN Scan Orang Berikutnya Sebelum Hijau!**
+    * Proses ini butuh waktu 0.5 - 2 detik.
+    * Jika kalian scan beruntun secepat kilat (tanpa jeda), sistem akan antre dan berpotensi error/timeout.
+    * **Kunci:** *Scan -> Tunggu Hijau -> Next.*
+
+---
+
+## 💻 Akses Halaman Admin
+
+Untuk panitia yang bertugas memantau data masuk atau mengecek peserta yang bermasalah.
+
+* **URL:** `.../admin`
+* **ID Panitia:** `kkm2025`
+* **Password:** `teknikub2025kkmxlvi`
+
+Halaman admin digunakan untuk memantau traffic dan melakukan rekap presensi panitia KKM. Terdapat beberapa hal yang perlu dipahami oleh Penanggung Jawab Presensi, sebagai berikut:
+* **Untuk link utama:**
+* Hanya terdapat 1 menu yang digunakan untuk mengakses presensi panitia KKM. Penanggung jawab dapat melakukan rekapitulasi presensi melalui link tersebut dan tidak menyebarluaskan link presesnsi, beserta ID dan Password halaman administrasi.
+* Penanggung jawab perlu melakukan rekap pada spreadsheet atau excel yang berbeda untuk setiap harinya, dengan menggunakan CTRL + C dan CTRL + V.
+* Setelah data dipindahkan, Penanggung Jawab perlu melakukan reset spreadsheet dengan cara menghapus data yang ada di dalamnya untuk mengurangi kesalahan program dalam membaca dan menulis data.
+* **Untuk link alternate:**
+* Terdapat 2 menu, yakni: "Buka Data Presensi" dan "Buka Data Rekapitulasi".
+* Penanggung jawab wajib melakukan reset atau penghapusan data presensi pada 2 menu terseubt setiap 
+*Gunakan halaman ini untuk membuka Google Spreadsheet secara langsung tanpa perlu login Gmail.*
+
+---
+
+## ⚠️ Logika Waktu (Sesi)
+
+Sistem otomatis menentukan sesi berdasarkan jam scan (WIB):
+* **06:00 - 11:59** ➔ Sesi **PAGI**
+* **12:00 - 14:59** ➔ Sesi **SIANG**
+* **15:00 - 18:00** ➔ Sesi **SORE**
+* **00:00 - 05:59** ➔ Status **TERLAMBAT**
+
+*(Peserta tidak bisa absen 2x di sesi yang sama. Jika mencoba, akan muncul pesan Error Merah).*
+
+---
+
+## ❓ Troubleshooting (Kendala & Solusi)
+
+| Masalah | Solusi Cepat |
+| :--- | :--- |
+| **Layar Kamera Blank/Hitam** | Refresh halaman browser. Pastikan izin kamera di-set ke "Allow". Cek apakah browser memblokir kamera. |
+| **Muncul Pesan Error Merah** | Cek internet kalian. Jika internet aman tapi masih error, minta peserta tunjukkan QR lagi (mungkin QR rusak/terpotong). |
+| **Internet Lemot/RTO** | Segera ganti ke Tethering HP panitia. Jangan paksa pakai WiFi jika sudah lemot. |
+| **Salah Satu Device Error** | Tenang. Pindah ke meja sebelah. Sistem mendukung *Multiple Device* (banyak HP scan barengan aman). |
+
+---
+
+**Semangat Bertugas Panitia KKM XLVI!**
+*#123TEKNIK #KITASATUBRAWIJAYA
