@@ -109,15 +109,12 @@
       status.style.color = "#555";
 
       if (type === "success" || type === true) {
-        // Hijau (Sukses)
         status.style.background = "#c9ffd6";
         status.style.color = "#007f1f";
       } else if (type === "warning") {
-        // Kuning/Oranye (Terlambat)
         status.style.background = "#fff8c5";
         status.style.color = "#856404";
       } else {
-        // Merah (Error/Gagal)
         status.style.background = "#ffd6d6";
         status.style.color = "#7f0000";
       }
@@ -145,32 +142,19 @@
         .then(res => res.json())
         .then(data => {
           console.log("Data dari n8n:", data);
-
-          // 1. AMBIL NAMA (Prioritas: Data Root > Barcode > "Kak")
-          // Kita pakai "Kak" kalau n8n tidak kirim nama (misal saat error/terlambat)
           let namaSiswa = data.nama || (data.barcode && data.barcode.nama) || "Kak";
-
-          // 2. CEK STATUS DARI N8N (success / warning / error)
-          // Kita abaikan 'data.message' dari n8n untuk Sukses & Warning
-          // agar teks di website sesuai keinginan Anda.
 
           let delayTime = 1000;
 
           if (data.status === "warning") {
-            // KASUS TERLAMBAT (Kuning)
-            // Paksa pakai format Anda: "Maaf Budi, Anda Terlambat!"
             showStatus(`Maaf ${namaSiswa}, Anda Terlambat!`, "warning");
             delayTime = 1500;
 
           } else if (data.status === "success" || data.valid === true) {
-            // KASUS SUKSES (Hijau)
-            // Paksa pakai format Anda: "Terima kasih Budi"
             showStatus("Terima kasih " + namaSiswa, "success");
             delayTime = 1000;
 
           } else {
-            // KASUS ERROR/GAGAL (Merah)
-            // Kalau ini biarkan pakai pesan dari n8n agar tahu errornya apa
             showStatus(data.message || "Gagal Presensi / Data Tidak Ditemukan", false);
             delayTime = 1500;
           }
@@ -178,7 +162,6 @@
           // 3. RESET SCANNER
           setTimeout(() => {
             isProcessing = false;
-            // Html5QrcodeScanner otomatis lanjut, hanya update status text
             showStatus("Silakan scan QR Anda", true);
           }, delayTime);
         })
