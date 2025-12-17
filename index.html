@@ -148,7 +148,7 @@
 
           let namaSiswa = data.nama || (data.barcode && data.barcode.nama) || "Kak";
 
-          let delayTime = 1000;
+          let delayTime = 2000;
 
           if (data.status === "warning") {
             showStatus(`Maaf ${namaSiswa}, Anda Terlambat!`, "warning");
@@ -156,7 +156,7 @@
 
           } else if (data.status === "success" || data.valid === true) {
             showStatus("Terima kasih " + namaSiswa, "success");
-            delayTime = 1000;
+            delayTime = 3000;
 
           } else {
             showStatus(data.message || "Gagal Presensi / Data Tidak Ditemukan", false);
