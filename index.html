@@ -148,19 +148,19 @@
 
           let namaSiswa = data.nama || (data.barcode && data.barcode.nama) || "Kak";
 
-          let delayTime = 2000;
+          let delayTime = 3000;
 
           if (data.status === "warning") {
             showStatus(`Maaf ${namaSiswa}, Anda Terlambat!`, "warning");
-            delayTime = 1500;
+            delayTime = 3000;
 
           } else if (data.status === "success" || data.valid === true) {
             showStatus("Terima kasih " + namaSiswa, "success");
-            delayTime = 3000;
+            delayTime = 5000;
 
           } else {
             showStatus(data.message || "Gagal Presensi / Data Tidak Ditemukan", false);
-            delayTime = 1500;
+            delayTime = 3000;
           }
 
           // 3. RESET SCANNER
