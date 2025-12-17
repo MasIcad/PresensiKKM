@@ -12,7 +12,7 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    /* --- RESET & GLOBAL --- */
+    /* --- Reset global */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Poppins', sans-serif;
@@ -22,7 +22,7 @@
       overflow-x: hidden; overflow-y: auto; 
     }
 
-    /* --- BACKGROUND SLIDESHOW --- */
+    /* --- slideshow bg --- */
     .slideshow-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; background-color: #003875; }
     .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; animation: slideAnimation 30s infinite; }
     .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 56, 117, 0.6); z-index: -1; }
@@ -146,31 +146,19 @@
         .then(data => {
           console.log("Data dari n8n:", data);
 
-          // 1. AMBIL NAMA (Prioritas: Data Root > Barcode > "Kak")
-          // Kita pakai "Kak" kalau n8n tidak kirim nama (misal saat error/terlambat)
           let namaSiswa = data.nama || (data.barcode && data.barcode.nama) || "Kak";
-
-          // 2. CEK STATUS DARI N8N (success / warning / error)
-          // Kita abaikan 'data.message' dari n8n untuk Sukses & Warning
-          // agar teks di website sesuai keinginan Anda.
 
           let delayTime = 1000;
 
           if (data.status === "warning") {
-            // KASUS TERLAMBAT (Kuning)
-            // Paksa pakai format Anda: "Maaf Budi, Anda Terlambat!"
             showStatus(`Maaf ${namaSiswa}, Anda Terlambat!`, "warning");
             delayTime = 1500;
 
           } else if (data.status === "success" || data.valid === true) {
-            // KASUS SUKSES (Hijau)
-            // Paksa pakai format Anda: "Terima kasih Budi"
             showStatus("Terima kasih " + namaSiswa, "success");
             delayTime = 1000;
 
           } else {
-            // KASUS ERROR/GAGAL (Merah)
-            // Kalau ini biarkan pakai pesan dari n8n agar tahu errornya apa
             showStatus(data.message || "Gagal Presensi / Data Tidak Ditemukan", false);
             delayTime = 1500;
           }
@@ -178,7 +166,6 @@
           // 3. RESET SCANNER
           setTimeout(() => {
             isProcessing = false;
-            // Html5QrcodeScanner otomatis lanjut, hanya update status text
             showStatus("Silakan scan QR Anda", true);
           }, delayTime);
         })
